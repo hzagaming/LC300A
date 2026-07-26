@@ -31,6 +31,14 @@ class RepositoryHygieneTest(unittest.TestCase):
     def test_rejects_runtime_directory(self):
         self.assertTrue(self.inspect_files({"__pycache__/module.pyc.txt": "cache\n"}))
 
+    def test_rejects_runtime_directory_inside_source_build_module(self):
+        self.assertTrue(
+            self.inspect_files({"scripts/build/__pycache__/module.pyc.txt": "cache\n"})
+        )
+
+    def test_ignores_root_build_artifacts(self):
+        self.assertEqual(self.inspect_files({"build/generated.iso": "artifact\n"}), [])
+
     def test_rejects_private_key_content(self):
         key_header = "-----BEGIN " + "PRIVATE KEY-----\n"
         self.assertTrue(self.inspect_files({"secret.txt": key_header}))

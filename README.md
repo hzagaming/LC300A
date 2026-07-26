@@ -2,7 +2,7 @@
 
 LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 Debian Stable、Linux LTS、KDE Plasma、Wayland 和 Calamares 为基础，目标是生成可通过 UEFI 启动、可试用、可安装并可更新的桌面操作系统。
 
-当前状态：**阶段 0 — 项目初始化**。仓库尚未生成可启动 ISO，也未声明任何真实硬件兼容性。
+当前状态：**阶段 1 — 最小可启动 ISO**。构建与 QEMU/OVMF 测试入口已经实现，但尚未在 x86_64 Linux 构建机完成首次 ISO 验收，也未声明任何真实硬件兼容性。
 
 ## 技术基线
 
@@ -26,6 +26,15 @@ make help
 make doctor
 make test
 make lint
+```
+
+在 Debian 13/Ubuntu 24.04 x86_64 构建机上：
+
+```bash
+make bootstrap
+make doctor-strict
+make iso
+make test-boot
 ```
 
 `make doctor` 只诊断环境，不修改宿主机。`make bootstrap` 会明确请求确认后安装当前平台所需的开发依赖。

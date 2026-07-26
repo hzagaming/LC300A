@@ -4,9 +4,6 @@ set -Eeuo pipefail
 
 target=${1:-unknown}
 case $target in
-  rootfs|iso|run|run-uefi|test-boot)
-    stage=1
-    ;;
   test-desktop)
     stage=2
     ;;

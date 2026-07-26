@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 readonly SCRIPT_DIR
@@ -12,7 +13,8 @@ required_files=(
   README.md ROADMAP.md PROJECT_STATE.md DECISIONS.md SECURITY.md Makefile
   .editorconfig .gitattributes .gitignore
   branding/experience.toml branding/product.toml docs/architecture/brand-experience.md
-  docs/architecture/iso-build.md scripts/build/generate_sounds.py
+  docs/architecture/iso-build.md scripts/build/configure_live.py
+  scripts/build/generate_sounds.py scripts/build/live_build.sh scripts/test/qemu-boot.sh
   scripts/bootstrap/debian.sh scripts/bootstrap/ubuntu.sh scripts/bootstrap/macos.sh
   scripts/test/clean.sh scripts/test/os-release.sh
   .github/workflows/ci.yml
@@ -38,6 +40,17 @@ for path in "${required_files[@]}"; do
   }
 done
 
+for path in \
+  distro/hooks/010-system-defaults.hook.chroot \
+  distro/overlays/usr/libexec/lc300a/boot-ready \
+  scripts/build/live_build.sh \
+  scripts/test/qemu-boot.sh; do
+  [[ -x $path ]] || {
+    printf '[ERROR] 系统脚本不可执行: %s\n' "$path" >&2
+    exit 1
+  }
+done
+
 for path in "${required_directories[@]}"; do
   [[ -d $path ]] || {
     printf '[ERROR] 缺少阶段 0 目录: %s\n' "$path" >&2
@@ -47,6 +60,7 @@ done
 
 python3 scripts/test/validate_product.py
 python3 scripts/test/validate_experience.py
+python3 scripts/test/validate_live_build.py
 python3 scripts/build/generate_sounds.py --check
 python3 scripts/test/repository_hygiene.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/unit -p 'test_*.py'
@@ -82,13 +96,13 @@ help_output=$(make --no-print-directory help)
 grep -q 'make doctor' <<<"$help_output"
 grep -q 'make iso' <<<"$help_output"
 
-if make --no-print-directory iso >/dev/null 2>&1; then
-  printf '[ERROR] 阶段 0 不应允许执行 ISO 构建\n' >&2
-  exit 1
-fi
 if make --no-print-directory clean >/dev/null 2>&1; then
   printf '[ERROR] 未确认时不应允许清理构建目录\n' >&2
   exit 1
 fi
+if BOOT_TIMEOUT_SECONDS=1 ./scripts/test/qemu-boot.sh test >/dev/null 2>&1; then
+  printf '[ERROR] 启动测试接受了不安全的超时值\n' >&2
+  exit 1
+fi
 
-printf '[OK] 阶段 0 文件、目录、配置、产物隔离、命令入口和阶段门禁测试通过\n'
+printf '[OK] 项目文件、目录、配置、产物隔离、命令入口和阶段门禁测试通过\n'

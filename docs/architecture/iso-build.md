@@ -2,7 +2,7 @@
 
 ## 范围
 
-LC300A 生成面向 x86_64 UEFI 设备的 Debian Live ISO。阶段 0 只定义边界和构建接口；实际 live-build 配置、rootfs 和启动测试属于阶段 1。
+LC300A 生成面向 x86_64 UEFI 设备的 Debian Live ISO。阶段 1 已提供 live-build 组装器、rootfs/ISO 构建脚本、产物清单和 QEMU/OVMF 串口启动测试；实际构建结果仍以 x86_64 Linux 验证为准。
 
 ## 构建数据流
 
@@ -17,7 +17,7 @@ distro/package-lists + distro/overlays + distro/hooks
                   │
                   ├──> debootstrap / Debian trixie amd64 rootfs
                   ├──> Linux + systemd + Live 用户
-                  ├──> GRUB UEFI + 恢复启动项
+                  ├──> GRUB UEFI
                   └──> squashfs + ISO9660
                               │
                               └──> build/artifacts/
@@ -36,11 +36,24 @@ distro/package-lists + distro/overlays + distro/hooks
 - 构建缓存与生成物只写入 `build/`，不得写入仓库源文件或保存运行时用户状态。
 - 构建失败必须保留明确日志并返回非零状态。
 - 构建脚本不得使用未经验证的远程脚本、未知二进制或隐式 root 操作。
+- 只有 live-build/debootstrap/chroot 阶段通过 `sudo` 提权，配置生成、产物复制和清单生成保持普通用户权限。
 - 每次构建记录 Git commit、UTC 时间、宿主架构、系统版本和包清单。
+
+## 构建命令
+
+```bash
+make bootstrap
+make doctor-strict
+make rootfs
+make iso
+make test-boot
+```
+
+`make iso` 会生成 ISO、SHA-256、软件包清单、构建清单和完整 live-build 日志。重复构建前使用 `make clean CONFIRM=1`；该命令只清理 `build/` 中的生成项并保留受控目录。若 live-build 留下 root 所有权文件，清理命令会在明确确认后请求 sudo。
 
 ## 启动与测试边界
 
-阶段 1 使用 QEMU `q35`、OVMF 和串口日志验证 UEFI 启动。测试必须有超时，且只有检测到 systemd 目标状态和可用 shell 后才通过。macOS Apple Silicon 上的 x86_64 模拟可用于调试，但发布验收必须在 x86_64 Linux 环境重复执行。
+阶段 1 使用 QEMU `q35`、成对 OVMF CODE/VARS pflash 和串口日志验证 UEFI 启动。Live 系统进入 `multi-user.target` 后由一次性 systemd 服务输出 `LC300A_BOOT_OK`；测试只有检测到该标记才通过，默认超时 180 秒。macOS Apple Silicon 上的 x86_64 模拟可用于调试，但发布验收必须在 x86_64 Linux 环境执行。
 
 ## 后续阶段接口
 

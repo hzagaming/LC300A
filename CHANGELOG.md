@@ -12,3 +12,4 @@
 - Debian 13/Ubuntu 24.04 构建环境版本门禁及 os-release 契约测试。
 - “落川流光”设计令牌、原创 Logo、light/dark 壁纸、可复现 SFX/BGM 资产与无障碍验证。
 - 修复 `make clean` 删除受控构建目录和 `.gitkeep` 的问题。
+- 阶段 1 live-build 组装、最小控制台系统、Live 用户、版本身份、ISO 产物清单和 QEMU/OVMF 启动测试入口。

@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -eu
+
+sed -i \
+  -e 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' \
+  -e 's/^# *zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' \
+  /etc/locale.gen
+locale-gen
+update-locale LANG=en_US.UTF-8
+
+passwd --lock root
+chmod 0440 /etc/sudoers.d/010_lc300a-live
+chmod 0755 /usr/libexec/lc300a/boot-ready
+systemctl enable NetworkManager.service
+systemctl enable lc300a-boot-ready.service
+systemctl set-default multi-user.target
+
+rm -f /var/lib/dbus/machine-id
+: >/etc/machine-id

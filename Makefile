@@ -13,11 +13,11 @@ help: ## 显示命令说明
 	  '  make brand-assets    重新生成原创品牌声音资产' \
 	  '  make test            运行当前阶段测试' \
 	  '  make lint            运行静态检查' \
-	  '  make rootfs          阶段 1：构建根文件系统' \
-	  '  make iso             阶段 1：构建 ISO' \
-	  '  make run             阶段 1：启动 ISO' \
-	  '  make run-uefi        阶段 1：通过 OVMF 启动 ISO' \
-	  '  make test-boot       阶段 1：启动测试' \
+	  '  make rootfs          构建阶段 1 根文件系统' \
+	  '  make iso             构建阶段 1 Live ISO' \
+	  '  make run             通过 QEMU/OVMF 启动 ISO' \
+	  '  make run-uefi        通过 QEMU/OVMF 启动 ISO' \
+	  '  make test-boot       运行 UEFI 串口启动测试' \
 	  '  make test-desktop    阶段 2：桌面测试' \
 	  '  make test-installer  阶段 3：安装器测试' \
 	  '  make clean CONFIRM=1 清理 build/ 中的生成文件' \
@@ -41,7 +41,19 @@ test:
 lint:
 	@./scripts/test/lint.sh
 
-rootfs iso run run-uefi test-boot test-desktop test-installer release:
+rootfs:
+	@./scripts/build/live_build.sh rootfs
+
+iso:
+	@./scripts/build/live_build.sh iso
+
+run run-uefi:
+	@./scripts/test/qemu-boot.sh run
+
+test-boot:
+	@./scripts/test/qemu-boot.sh test
+
+test-desktop test-installer release:
 	@./scripts/build/stage-gate.sh "$@"
 
 clean:

@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 
-SKIP_DIRECTORIES = {".git", "build"}
 RUNTIME_DIRECTORIES = {
     "__pycache__",
     ".mypy_cache",
@@ -33,7 +32,7 @@ def inspect_repository(root: Path) -> tuple[list[str], int]:
         current_path = Path(current)
         kept_directories = []
         for name in directories:
-            if name in SKIP_DIRECTORIES:
+            if name == ".git" or (current_path == root and name == "build"):
                 continue
             if name in RUNTIME_DIRECTORIES:
                 errors.append(f"禁止提交运行时目录: {(current_path / name).relative_to(root)}")

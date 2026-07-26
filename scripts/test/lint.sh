@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 readonly SCRIPT_DIR
@@ -14,12 +15,20 @@ if help mapfile >/dev/null 2>&1; then
 fi
 
 if [[ $mapfile_supported == 1 ]]; then
-  mapfile -t shell_files < <(find scripts -type f -name '*.sh' -print | sort)
+  mapfile -t shell_files < <(
+    find scripts -type f -name '*.sh' -print
+    find distro/hooks -type f -name '*.hook.chroot' -print
+    find distro/overlays/usr/libexec -type f -print
+  )
 else
   shell_files=()
   while IFS= read -r file; do
     shell_files+=("$file")
-  done < <(find scripts -type f -name '*.sh' -print | sort)
+  done < <(
+    find scripts -type f -name '*.sh' -print
+    find distro/hooks -type f -name '*.hook.chroot' -print
+    find distro/overlays/usr/libexec -type f -print
+  )
 fi
 
 bash -n "${shell_files[@]}"
@@ -27,6 +36,7 @@ printf '[OK] Bash 语法检查通过（%s 个文件）\n' "${#shell_files[@]}"
 
 python3 scripts/test/validate_product.py
 python3 scripts/test/validate_experience.py
+python3 scripts/test/validate_live_build.py
 python3 scripts/test/repository_hygiene.py
 
 if command -v shellcheck >/dev/null 2>&1; then

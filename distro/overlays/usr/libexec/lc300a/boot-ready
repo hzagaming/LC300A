@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -eu
+
+config=/etc/live/config.conf.d/lc300a.conf
+marker=LC300A_BOOT_OK
+
+# shellcheck source=/dev/null
+. "$config"
+id "$LIVE_USERNAME" >/dev/null
+test -d "/home/$LIVE_USERNAME"
+user_shell=$(getent passwd "$LIVE_USERNAME" | cut -d: -f7)
+case $user_shell in
+  /bin/bash|/bin/sh) ;;
+  *) exit 1 ;;
+esac
+id -nG "$LIVE_USERNAME" | tr ' ' '\n' | grep -qx sudo
+systemctl --quiet is-active getty@tty1.service
+
+printf '%s\n' "$marker"
+if [ -w /dev/ttyS0 ]; then
+  printf '%s\n' "$marker" >/dev/ttyS0
+fi

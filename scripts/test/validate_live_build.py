@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+
+import importlib.util
+import stat
+import sys
+import tempfile
+import tomllib
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CONFIGURE_PATH = PROJECT_ROOT / "scripts/build/configure_live.py"
+SPEC = importlib.util.spec_from_file_location("configure_live", CONFIGURE_PATH)
+CONFIGURE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(CONFIGURE)
+
+
+def validate() -> None:
+    product = tomllib.loads(
+        (PROJECT_ROOT / "branding/product.toml").read_text(encoding="utf-8")
+    )
+    packages = (
+        PROJECT_ROOT / "distro/package-lists/core.list.chroot"
+    ).read_text(encoding="utf-8").splitlines()
+    if packages != sorted(set(packages)):
+        raise ValueError("核心软件包清单必须排序且不能重复")
+    required = {"linux-image-amd64", "live-boot", "live-config", "systemd-sysv", "sudo"}
+    if not required.issubset(packages) or "openssh-server" in packages:
+        raise ValueError("核心软件包清单缺少启动组件或意外启用 SSH 服务端")
+
+    arguments = CONFIGURE.live_build_arguments(product)
+    required_arguments = {
+        "--distribution": "trixie",
+        "--architectures": "amd64",
+        "--binary-images": "iso-hybrid",
+        "--bootloaders": "grub-efi",
+        "--debian-installer": "none",
+    }
+    for option, expected in required_arguments.items():
+        index = arguments.index(option)
+        if arguments[index + 1] != expected:
+            raise ValueError(f"live-build 参数错误: {option}")
+    boot_parameters = arguments[arguments.index("--bootappend-live") + 1]
+    for value in ("boot=live", "console=ttyS0,115200n8", "username=lc300a-live"):
+        if value not in boot_parameters:
+            raise ValueError(f"缺少启动参数: {value}")
+
+    with tempfile.TemporaryDirectory(prefix="lc300a-live-config-") as directory:
+        workspace = Path(directory)
+        CONFIGURE.configure(workspace, False)
+        config = workspace / "config"
+        if list(config.rglob(".gitkeep")):
+            raise ValueError("Live 文件系统包含仓库占位文件")
+        generated_packages = (config / "package-lists/core.list.chroot").read_text().splitlines()
+        if generated_packages != packages:
+            raise ValueError("生成的软件包清单与版本控制输入不一致")
+        overlay = config / "includes.chroot"
+        os_release = (overlay / "usr/lib/os-release").read_text(encoding="utf-8")
+        live_config = (overlay / "etc/live/config.conf.d/lc300a.conf").read_text(
+            encoding="utf-8"
+        )
+        sudoers = (overlay / "etc/sudoers.d/010_lc300a-live").read_text(encoding="utf-8")
+        if 'ID="lc300a"' not in os_release or 'VERSION_CODENAME="trixie"' not in os_release:
+            raise ValueError("生成的 os-release 身份错误")
+        if 'LIVE_USERNAME="lc300a-live"' not in live_config:
+            raise ValueError("Live 用户配置未从产品配置生成")
+        if sudoers != "lc300a-live ALL=(ALL:ALL) NOPASSWD: ALL\n":
+            raise ValueError("Live sudoers 配置错误")
+        service = (overlay / "usr/lib/systemd/system/lc300a-boot-ready.service").read_text(
+            encoding="utf-8"
+        )
+        marker_script = (overlay / "usr/libexec/lc300a/boot-ready").read_text(
+            encoding="utf-8"
+        )
+        if (
+            "WantedBy=multi-user.target" not in service
+            or "After=live-config.service" not in service
+            or "LC300A_BOOT_OK" not in marker_script
+            or 'id "$LIVE_USERNAME"' not in marker_script
+            or "getty@tty1.service" not in marker_script
+        ):
+            raise ValueError("串口启动标记服务配置错误")
+        hook = config / "hooks/live/010-system-defaults.hook.chroot"
+        if not hook.stat().st_mode & stat.S_IXUSR:
+            raise ValueError("chroot hook 不可执行")
+
+    qemu_script = (PROJECT_ROOT / "scripts/test/qemu-boot.sh").read_text(encoding="utf-8")
+    for value in ("OVMF_CODE_4M.fd", "OVMF_VARS_4M.fd", "if=pflash", "LC300A_BOOT_OK"):
+        if value not in qemu_script:
+            raise ValueError(f"QEMU UEFI 测试缺少契约: {value}")
+
+
+def main() -> int:
+    try:
+        validate()
+    except (KeyError, OSError, ValueError) as error:
+        print(f"[ERROR] live-build 契约校验失败: {error}", file=sys.stderr)
+        return 1
+    print("[OK] live-build 参数、软件包、overlay 与 hook 契约通过")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

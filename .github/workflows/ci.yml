@@ -1,4 +1,4 @@
-name: Stage 0 CI
+name: Stage 1 CI
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 90
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
@@ -24,5 +24,11 @@ jobs:
         run: make doctor-strict
       - name: Lint
         run: make lint STRICT=1
-      - name: Test stage 0
+      - name: Test project contracts
         run: make test
+      - name: Build Live ISO
+        run: make iso
+      - name: Test UEFI boot
+        env:
+          BOOT_TIMEOUT_SECONDS: "300"
+        run: make test-boot

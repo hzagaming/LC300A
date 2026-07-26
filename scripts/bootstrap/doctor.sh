@@ -42,10 +42,12 @@ if [[ $os_name == Linux && ($machine == x86_64 || $machine == amd64) ]]; then
   fi
   check_commands "${LC300A_LINUX_BUILD_COMMANDS[@]}" || missing=1
 
-  if [[ -r /usr/share/OVMF/OVMF_CODE.fd || -r /usr/share/OVMF/OVMF_CODE_4M.fd || -r /usr/share/edk2/ovmf/OVMF_CODE.fd ]]; then
-    print_status OK "OVMF 固件已找到"
+  if [[ (-r /usr/share/OVMF/OVMF_CODE_4M.fd && -r /usr/share/OVMF/OVMF_VARS_4M.fd) \
+    || (-r /usr/share/OVMF/OVMF_CODE.fd && -r /usr/share/OVMF/OVMF_VARS.fd) \
+    || (-r /usr/share/edk2/ovmf/OVMF_CODE.fd && -r /usr/share/edk2/ovmf/OVMF_VARS.fd) ]]; then
+    print_status OK "OVMF CODE/VARS 固件已找到"
   else
-    print_status MISSING "OVMF 固件"
+    print_status MISSING "OVMF CODE/VARS 固件"
     missing=1
   fi
 else
