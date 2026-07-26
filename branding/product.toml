@@ -1,0 +1,57 @@
+[product]
+id = "lc300a"
+name = "LC300A"
+display_name = "落川OS 300型"
+variant = "Development"
+version = "0.0.1-dev"
+version_id = "0.0.1"
+channel = "development"
+
+[base]
+distribution = "debian"
+suite = "trixie"
+architecture = "amd64"
+firmware = "uefi"
+
+[identity]
+hostname_prefix = "lc300a"
+live_user = "lc300a-live"
+os_release_id = "lc300a"
+home_url = "https://github.com/charliezhong/LC300A"
+support_url = "https://github.com/charliezhong/LC300A/issues"
+
+[artifacts]
+iso_name = "LC300A-x86_64.iso"
+output_directory = "build/artifacts"
+
+[colors.brand]
+primary = "#315C9B"
+accent = "#4D86C6"
+background = "#F4F7FB"
+foreground = "#172133"
+
+[colors.light]
+background = "#F4F7FB"
+surface = "#FFFFFF"
+surface_alt = "#E8EFF8"
+text = "#172133"
+text_muted = "#46566D"
+primary = "#315C9B"
+on_primary = "#FFFFFF"
+accent = "#147887"
+focus = "#0A5FB5"
+danger = "#A72A22"
+success = "#176B3A"
+
+[colors.dark]
+background = "#0B1220"
+surface = "#121C2D"
+surface_alt = "#1A2940"
+text = "#F4F7FB"
+text_muted = "#B7C4D6"
+primary = "#77AEF2"
+on_primary = "#07111F"
+accent = "#5FD0D8"
+focus = "#8CC2FF"
+danger = "#FF9B94"
+success = "#72D49A"

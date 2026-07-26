@@ -1,0 +1,10 @@
+*
+!.gitignore
+!live-build/
+!rootfs/
+!iso/
+!artifacts/
+!live-build/.gitkeep
+!rootfs/.gitkeep
+!iso/.gitkeep
+!artifacts/.gitkeep

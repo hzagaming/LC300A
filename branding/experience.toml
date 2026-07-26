@@ -1,0 +1,51 @@
+[experience]
+id = "luochuan-flow"
+name = "落川流光"
+schema_version = 1
+status = "design-foundation"
+
+[assets]
+logo = "branding/logos/lc300a-mark.svg"
+wallpaper_light = "branding/wallpapers/lc300a-flow-light.svg"
+wallpaper_dark = "branding/wallpapers/lc300a-flow-dark.svg"
+sound_theme = "branding/sounds/theme.toml"
+
+[typography]
+ui_families = ["Noto Sans CJK SC", "Noto Sans", "sans-serif"]
+monospace_families = ["Noto Sans Mono CJK SC", "Noto Sans Mono", "monospace"]
+base_size_px = 14
+minimum_size_px = 12
+large_text_px = 18
+
+[layout]
+grid_unit_px = 4
+control_height_px = 36
+touch_target_px = 44
+panel_radius_px = 12
+dialog_radius_px = 16
+focus_width_px = 2
+
+[motion]
+fast_ms = 100
+standard_ms = 180
+slow_ms = 280
+reduced_motion_ms = 0
+easing = "cubic-bezier(0.2, 0.0, 0.0, 1.0)"
+
+[accessibility]
+minimum_text_contrast = 4.5
+minimum_large_text_contrast = 3.0
+minimum_focus_contrast = 3.0
+never_encode_state_by_color_only = true
+respect_reduced_motion = true
+respect_system_mute = true
+
+[audio]
+event_sounds_enabled = true
+event_volume = 0.55
+startup_sound_enabled = true
+startup_volume = 0.45
+background_music_enabled = false
+background_music_autoplay = false
+background_music_volume = 0.20
+quiet_hours_supported = true

@@ -1,0 +1,28 @@
+name: Stage 0 CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Bootstrap build host
+        env:
+          LC300A_ASSUME_YES: "1"
+        run: make bootstrap
+      - name: Verify complete toolchain
+        run: make doctor-strict
+      - name: Lint
+        run: make lint STRICT=1
+      - name: Test stage 0
+        run: make test

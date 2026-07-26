@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 2160" role="img" aria-labelledby="title desc">
+  <metadata>SPDX-License-Identifier: CC-BY-SA-4.0</metadata>
+  <title id="title">LC300A Flow Light</title>
+  <desc id="desc">A calm abstract landscape with layered mountains and a luminous descending river.</desc>
+  <defs>
+    <linearGradient id="sky" x1="360" y1="120" x2="3380" y2="2040" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FAFE"/>
+      <stop offset="0.45" stop-color="#E8F1FA"/>
+      <stop offset="1" stop-color="#CFE1EF"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(3000 340) rotate(142) scale(1480 1040)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.96"/>
+      <stop offset="0.46" stop-color="#9EDDE4" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#77AEF2" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ridgeA" x1="400" y1="980" x2="3400" y2="1850" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8CCE1"/>
+      <stop offset="1" stop-color="#80A9C9"/>
+    </linearGradient>
+    <linearGradient id="ridgeB" x1="280" y1="1260" x2="3540" y2="2020" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8AAFCB"/>
+      <stop offset="1" stop-color="#527FA6"/>
+    </linearGradient>
+    <linearGradient id="river" x1="3030" y1="650" x2="1120" y2="2200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.92"/>
+      <stop offset="0.42" stop-color="#B9F3F6" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#4D86C6" stop-opacity="0.72"/>
+    </linearGradient>
+    <pattern id="grain" width="96" height="96" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="18" r="2" fill="#315C9B" opacity="0.08"/>
+      <circle cx="68" cy="62" r="1.5" fill="#147887" opacity="0.07"/>
+    </pattern>
+  </defs>
+  <rect width="3840" height="2160" fill="url(#sky)"/>
+  <rect width="3840" height="2160" fill="url(#glow)"/>
+  <path d="M0 1270C520 1080 870 1020 1260 1100c390 81 620 62 930-142 370-245 738-238 1650-58v1260H0Z" fill="url(#ridgeA)" opacity="0.62"/>
+  <path d="M0 1570c470-220 900-288 1330-122 420 163 710 100 1040-122 396-268 870-265 1470-78v912H0Z" fill="url(#ridgeB)" opacity="0.78"/>
+  <path d="M3840 1718c-560-220-1000-190-1350 46-336 226-696 258-1110 94-476-188-889-128-1380 114v188h3840Z" fill="#315C9B" opacity="0.28"/>
+  <path d="M3180 550c-242 142-298 356-370 584-76 244-217 402-526 525-288 115-473 290-590 501h-470c134-330 394-582 760-745 238-106 352-237 413-438 91-302 248-530 565-694Z" fill="url(#river)" opacity="0.9"/>
+  <path d="M3065 615c-184 150-210 318-270 514-72 235-224 392-502 505-244 99-394 235-516 412" fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" opacity="0.5"/>
+  <rect width="3840" height="2160" fill="url(#grain)"/>
+</svg>

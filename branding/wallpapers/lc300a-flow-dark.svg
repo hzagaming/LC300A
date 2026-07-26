@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 2160" role="img" aria-labelledby="title desc">
+  <metadata>SPDX-License-Identifier: CC-BY-SA-4.0</metadata>
+  <title id="title">LC300A Flow Dark</title>
+  <desc id="desc">A deep blue abstract landscape with layered mountains and a cyan descending river.</desc>
+  <defs>
+    <linearGradient id="sky" x1="240" y1="80" x2="3540" y2="2120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="0.48" stop-color="#10243A"/>
+      <stop offset="1" stop-color="#183D58"/>
+    </linearGradient>
+    <radialGradient id="aurora" cx="0" cy="0" r="1" gradientTransform="translate(2980 310) rotate(143) scale(1530 1080)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#77AEF2" stop-opacity="0.64"/>
+      <stop offset="0.42" stop-color="#5FD0D8" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#5FD0D8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ridgeA" x1="360" y1="1020" x2="3460" y2="1880" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#263C57"/>
+      <stop offset="1" stop-color="#1E5871"/>
+    </linearGradient>
+    <linearGradient id="ridgeB" x1="320" y1="1310" x2="3480" y2="2060" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#162B43"/>
+      <stop offset="1" stop-color="#225B72"/>
+    </linearGradient>
+    <linearGradient id="river" x1="3100" y1="560" x2="1190" y2="2200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDFBFC" stop-opacity="0.92"/>
+      <stop offset="0.45" stop-color="#5FD0D8" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#4D86C6" stop-opacity="0.62"/>
+    </linearGradient>
+    <pattern id="stars" width="180" height="180" patternUnits="userSpaceOnUse">
+      <circle cx="24" cy="36" r="2" fill="#DDFBFC" opacity="0.18"/>
+      <circle cx="126" cy="104" r="1.5" fill="#77AEF2" opacity="0.2"/>
+    </pattern>
+  </defs>
+  <rect width="3840" height="2160" fill="url(#sky)"/>
+  <rect width="3840" height="2160" fill="url(#aurora)"/>
+  <rect width="3840" height="1220" fill="url(#stars)"/>
+  <path d="M0 1270C520 1080 870 1020 1260 1100c390 81 620 62 930-142 370-245 738-238 1650-58v1260H0Z" fill="url(#ridgeA)" opacity="0.8"/>
+  <path d="M0 1570c470-220 900-288 1330-122 420 163 710 100 1040-122 396-268 870-265 1470-78v912H0Z" fill="url(#ridgeB)" opacity="0.94"/>
+  <path d="M3840 1718c-560-220-1000-190-1350 46-336 226-696 258-1110 94-476-188-889-128-1380 114v188h3840Z" fill="#07111F" opacity="0.6"/>
+  <path d="M3180 550c-242 142-298 356-370 584-76 244-217 402-526 525-288 115-473 290-590 501h-470c134-330 394-582 760-745 238-106 352-237 413-438 91-302 248-530 565-694Z" fill="url(#river)" opacity="0.86"/>
+  <path d="M3065 615c-184 150-210 318-270 514-72 235-224 392-502 505-244 99-394 235-516 412" fill="none" stroke="#DDFBFC" stroke-width="22" stroke-linecap="round" opacity="0.42"/>
+</svg>

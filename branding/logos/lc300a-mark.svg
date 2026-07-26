@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <metadata>SPDX-License-Identifier: CC-BY-SA-4.0</metadata>
+  <title id="title">LC300A mark</title>
+  <desc id="desc">A rounded blue tile containing three descending river lines.</desc>
+  <defs>
+    <linearGradient id="tile" x1="36" y1="28" x2="222" y2="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#77AEF2"/>
+      <stop offset="0.52" stop-color="#315C9B"/>
+      <stop offset="1" stop-color="#16375F"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="82" y1="54" x2="170" y2="205" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#B9F3F6"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="58" fill="url(#tile)"/>
+  <path d="M74 61v91c0 28 20 46 50 46h54" fill="none" stroke="url(#flow)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M116 61v70c0 20 14 33 35 33h27" fill="none" stroke="url(#flow)" stroke-width="12" stroke-linecap="round" opacity="0.82"/>
+  <path d="M156 61v43c0 13 8 21 22 21" fill="none" stroke="url(#flow)" stroke-width="8" stroke-linecap="round" opacity="0.64"/>
+</svg>

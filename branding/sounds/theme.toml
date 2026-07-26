@@ -1,0 +1,37 @@
+[theme]
+id = "luochuan-flow"
+name = "落川流光"
+schema_version = 1
+license = "CC-BY-SA-4.0"
+
+[format]
+sample_rate = 48000
+channels = 1
+sample_width_bits = 16
+peak_limit = 0.78
+
+[sounds.startup]
+file = "startup.wav"
+role = "session_start"
+duration_ms = 1800
+enabled_by_default = true
+
+[sounds.notification]
+file = "notification.wav"
+role = "notification"
+duration_ms = 420
+enabled_by_default = true
+
+[sounds.warning]
+file = "warning.wav"
+role = "warning"
+duration_ms = 620
+enabled_by_default = true
+
+[sounds.ambient]
+file = "ambient-preview.wav"
+role = "background_music_preview"
+duration_ms = 8000
+enabled_by_default = false
+autoplay = false
+loop = false
