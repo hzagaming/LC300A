@@ -2,11 +2,11 @@
 
 ## 支持矩阵
 
-| 环境 | 编辑/静态检查 | ISO 构建 | 发布验收 |
-| --- | :---: | :---: | :---: |
-| Debian 13 x86_64 | 是 | 是 | 是 |
-| Ubuntu 24.04 x86_64 | 是 | 是 | 是 |
-| macOS Apple Silicon | 是 | 否 | 否 |
+| 环境 | 编辑/静态检查 | ISO 构建 | 已有 ISO 启动 | 发布验收 |
+| --- | :---: | :---: | :---: | :---: |
+| Debian 13 x86_64 | 是 | 是 | 是 | 是 |
+| Ubuntu 24.04 x86_64 | 是 | 是 | 是 | 是 |
+| macOS Apple Silicon | 是 | 否 | QEMU 模拟 | 否 |
 
 先运行 `make doctor`。该命令只报告环境，不安装软件。`make doctor-strict` 仅在完整的 x86_64 Linux 工具链上成功。
 
@@ -33,3 +33,11 @@ make doctor
 ```
 
 如需安装宿主侧 QEMU 和 ShellCheck，可执行 `make bootstrap` 并确认 Homebrew 操作。随后准备 Debian/Ubuntu x86_64 虚拟机或远程构建机，在 Linux 环境重新运行严格检查。Apple Silicon 上对 x86_64 的 QEMU 属于模拟，性能较低。
+
+已有 `build/artifacts/LC300A-x86_64.iso` 时：
+
+```bash
+make run-uefi
+# 或执行无界面串口验收
+BOOT_TIMEOUT_SECONDS=600 make test-boot
+```

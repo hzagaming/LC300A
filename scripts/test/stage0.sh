@@ -16,7 +16,7 @@ required_files=(
   docs/architecture/iso-build.md scripts/build/configure_live.py
   scripts/build/generate_sounds.py scripts/build/live_build.sh scripts/test/qemu-boot.sh
   scripts/bootstrap/debian.sh scripts/bootstrap/ubuntu.sh scripts/bootstrap/macos.sh
-  scripts/test/clean.sh scripts/test/os-release.sh
+  scripts/test/bootstrap.sh scripts/test/clean.sh scripts/test/os-release.sh
   .github/workflows/ci.yml
 )
 required_directories=(
@@ -65,6 +65,7 @@ python3 scripts/build/generate_sounds.py --check
 python3 scripts/test/repository_hygiene.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/unit -p 'test_*.py'
 ./scripts/test/os-release.sh
+./scripts/test/bootstrap.sh
 ./scripts/test/clean.sh
 
 git check-ignore -q build/artifacts/LC300A-test.iso || {

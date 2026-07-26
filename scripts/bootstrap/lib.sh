@@ -7,14 +7,14 @@ set -Eeuo pipefail
 readonly LC300A_REQUIRED_COMMANDS=(bash git make python3)
 # shellcheck disable=SC2034
 readonly LC300A_LINUX_BUILD_COMMANDS=(
-  debootstrap grub-mkstandalone jq lb mformat mkfs.vfat mksquashfs
+  debootstrap grub-mkrescue jq lb mformat mkfs.vfat mksquashfs
   qemu-system-x86_64 rsync sha256sum xorriso
 )
 # shellcheck disable=SC2034
 readonly LC300A_LINUX_BUILD_PACKAGES=(
-  bash ca-certificates coreutils debootstrap dosfstools git grub-efi-amd64-bin
-  grub-pc-bin jq live-build make mtools ovmf python3 qemu-system-x86 rsync
-  shellcheck squashfs-tools xorriso
+  bash ca-certificates coreutils debian-archive-keyring debootstrap dosfstools git
+  grub-efi-amd64-bin grub-pc-bin jq live-build make mtools ovmf python3
+  qemu-system-x86 rsync shellcheck squashfs-tools xorriso
 )
 
 has_command() {
@@ -52,6 +52,15 @@ run_as_root() {
     print_status ERROR "需要 root 权限，但未找到 sudo"
     return 1
   fi
+}
+
+install_linux_packages() {
+  local -a command=(apt-get install --no-install-recommends)
+
+  if [[ ${LC300A_ASSUME_YES:-0} == 1 ]]; then
+    command+=(--yes)
+  fi
+  run_as_root "${command[@]}" "$@"
 }
 
 os_release_value() {

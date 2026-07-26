@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-阶段 1：最小可启动 ISO（实现完成，x86_64 Linux 构建验证待执行）。
+阶段 2：图形桌面（待开始；阶段 1 最小可启动 ISO 已完成验收）。
 
 ## 当前事实
 
@@ -14,36 +14,37 @@
 - 仓库统一使用 LF 行尾，并拒绝常见凭据、环境文件、运行时缓存和大型系统产物进入源码树。
 - bootstrap 和 doctor 只接受 Debian 13（trixie）或 Ubuntu 24.04 x86_64 构建环境。
 - 已建立“落川流光”品牌基础：语义色、Logo、双主题壁纸、启动/通知/警告音及默认关闭的可选 BGM 预览。
-- 已实现 live-build 配置组装、最小控制台包清单、Live 用户、root 锁定、串口启动标记、ISO/哈希/包清单/构建清单和 QEMU/OVMF 测试入口。
-- 当前宿主机为 macOS 26.4 arm64，不是受支持的最终 ISO 构建环境。
-- 品牌资产尚未安装到 Plasma/SDDM；当前宿主机尚未生成或启动 ISO。
-- 未验证 QEMU、安装器、桌面或真实硬件支持。
+- 已实现 live-build rootfs、显式 Debian 安全源、GRUB BIOS/UEFI hybrid ISO、Live 用户、root 锁定、串口启动标记、哈希/包清单/构建清单和 QEMU/OVMF 测试。
+- 当前宿主机为 macOS 26.4 arm64；通过 QEMU/Lima 模拟的 Ubuntu 24.04 x86_64 构建机生成 ISO，宿主 QEMU 11.0.3 完成 UEFI 启动测试。
+- 品牌资产尚未安装到 Plasma/SDDM，阶段 1 产物是可用控制台 Live 系统，不是图形桌面成品。
+- 未验证安装器、桌面或真实硬件支持。
 
 ## 已验证
 
 在 macOS 26.4 arm64 宿主机实际执行：
 
 - `make help`：通过，列出全部统一命令。
-- `make doctor`：通过诊断；验证 Python 3.11+/tomllib，正确报告宿主机不支持最终 ISO 构建，并指出 QEMU 缺失。
-- `make lint STRICT=1`：16 个 Shell/系统脚本、产品配置、品牌体验、live-build 契约、仓库卫生和 ShellCheck 全部通过。
-- `make test`：23 个单元测试、4 个 os-release fixture 和构建清理契约通过；项目文件、目录、产物隔离、Git 忽略规则、LF 行尾、命令入口和未开放阶段门禁通过。
+- `make doctor`：通过诊断；验证 Python 3.11+/tomllib，正确报告 macOS 不是 ISO 构建环境，并检测 Homebrew QEMU 与 ShellCheck。
+- `make lint STRICT=1`：17 个 Shell/系统脚本、产品配置、品牌体验、live-build 契约、仓库卫生和 ShellCheck 全部通过。
+- `make test`：25 个单元测试、4 个 os-release fixture、bootstrap 与构建清理契约通过；项目文件、目录、产物隔离、Git 忽略规则、LF 行尾、命令入口和未开放阶段门禁通过。
 - 品牌体验检查：light/dark 文本与焦点对比度、SVG 安全和无障碍元数据、4 个 WAV 的格式/峰值/边缘/哈希及确定性重生成通过。
 - 视觉 QA：使用 macOS 本地 SVG 渲染器检查 Logo 与两张 3840×2160 壁纸，通过。
 - `./scripts/bootstrap/macos.sh --check`：通过，识别 Apple Silicon 并输出 x86_64 Linux 构建方案。
 - `make doctor-strict`：按预期失败，拒绝将当前宿主机视为完整构建环境。
 - `git diff --check`：通过。
-- CI YAML 本地语法解析通过；GitHub Actions 尚未实际运行。
-- `make iso` 在 macOS arm64 正确拒绝构建；`make run-uefi` 在缺少 ISO 时正确失败。
-- live-build 参数、核心包清单、生成的 os-release/Live 用户/sudoers、overlay 无 `.gitkeep` 污染和 hook 可执行权限契约通过。
+- CI YAML 本地语法解析通过；GitHub Actions 因本机缺少 GitHub 凭据尚未实际运行。
+- Ubuntu 24.04 x86_64：bootstrap、严格 doctor、lint、test 与 `make iso` 通过，生成约 381 MiB ISO 及 SHA-256、包清单、构建清单和日志。
+- xorriso 验证 ISO 含 protective MBR、GPT、BIOS GRUB 和 EFI El Torito 启动项；宿主 QEMU/OVMF `make test-boot` 检测到 `LC300A_BOOT_OK`。
+- 启动标记出现前已验证 Live 用户、home、有效 shell、sudo 组和 `getty@tty1`。
 
 ## 已知阻塞与限制
 
-- 需要 Debian/Ubuntu x86_64 构建环境验证 live-build、debootstrap、OVMF 和 QEMU 工具链。
-- 当前 macOS 宿主机未检测到 Docker 和 QEMU。
-- CI 中的 Ubuntu bootstrap、ISO 构建、ShellCheck、`make doctor-strict` 和 QEMU UEFI 启动需要推送后验证，不能用本地契约测试代替。
-- 软件源签名密钥和发布基础设施尚未创建；这些不阻塞阶段 0。
+- Debian 13 原生构建机和 GitHub Actions 尚未验证；当前真实构建环境是 Ubuntu 24.04 x86_64 模拟机。
+- macOS 上的 x86_64 TCG 只用于开发验收，不能替代原生 x86_64 发布性能与硬件测试。
+- 远端推送因本机 GitHub HTTPS/SSH 凭据缺失而失败，CI 尚未触发。
+- LC300A 自有软件源签名密钥和发布基础设施尚未创建；这些不阻塞阶段 2 开发。
 - GPL-3.0-or-later 与 CC BY-SA 4.0 的完整许可证正文尚未从可信来源引入。
 
 ## 下一优先任务
 
-在 Ubuntu 24.04 x86_64 CI 或 Debian 13 x86_64 构建机执行 `make iso && make test-boot`，保存真实构建和串口结果。
+开始阶段 2：加入 KDE Plasma、Wayland、SDDM、PipeWire 与品牌桌面集成，并建立自动登录和桌面 E2E 验收。

@@ -11,18 +11,18 @@
 
 验收：`make help` 与 `make doctor` 可运行并准确报告缺失依赖。
 
-## 阶段 1：最小可启动 ISO（0.1.0，进行中）
+## 阶段 1：最小可启动 ISO（0.1.0，完成）
 
 实现 Debian rootfs、Linux 内核、systemd、GRUB UEFI、Live 用户、串口控制台、ISO 构建与 QEMU/OVMF 启动测试。
 
 - [x] live-build 配置组装、核心包清单、overlay 和 chroot hook
 - [x] rootfs/ISO 构建入口及 ISO 哈希、包清单、构建清单
 - [x] QEMU q35、OVMF CODE/VARS 和串口启动标记测试
-- [ ] 在 Debian/Ubuntu x86_64 构建 ISO 并通过 `make test-boot`
+- [x] 在 Ubuntu 24.04 x86_64 构建 ISO 并通过 QEMU/OVMF UEFI `make test-boot`
 
 验收：ISO 在 QEMU 中通过 UEFI 启动并进入 shell。
 
-## 阶段 2：图形桌面（0.2.0）
+## 阶段 2：图形桌面（0.2.0，下一阶段）
 
 实现 SDDM、KDE Plasma、Wayland、XWayland、基础品牌、网络、音频、文件管理器、终端和浏览器。
 

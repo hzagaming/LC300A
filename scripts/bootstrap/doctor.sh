@@ -42,6 +42,13 @@ if [[ $os_name == Linux && ($machine == x86_64 || $machine == amd64) ]]; then
   fi
   check_commands "${LC300A_LINUX_BUILD_COMMANDS[@]}" || missing=1
 
+  if [[ -r /usr/share/keyrings/debian-archive-keyring.gpg ]]; then
+    print_status OK "Debian 软件源签名 keyring 已找到"
+  else
+    print_status MISSING "Debian 软件源签名 keyring"
+    missing=1
+  fi
+
   if [[ (-r /usr/share/OVMF/OVMF_CODE_4M.fd && -r /usr/share/OVMF/OVMF_VARS_4M.fd) \
     || (-r /usr/share/OVMF/OVMF_CODE.fd && -r /usr/share/OVMF/OVMF_VARS.fd) \
     || (-r /usr/share/edk2/ovmf/OVMF_CODE.fd && -r /usr/share/edk2/ovmf/OVMF_VARS.fd) ]]; then

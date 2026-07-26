@@ -10,6 +10,7 @@ readonly ISO_PATH="$PROJECT_ROOT/build/artifacts/LC300A-x86_64.iso"
 readonly SERIAL_LOG="$PROJECT_ROOT/build/artifacts/boot-serial.log"
 readonly OVMF_VARS_COPY="$PROJECT_ROOT/build/artifacts/OVMF_VARS.fd"
 readonly BOOT_MARKER=LC300A_BOOT_OK
+QEMU_PID=
 
 find_ovmf() {
   local code
@@ -23,6 +24,8 @@ find_ovmf() {
 /usr/share/OVMF/OVMF_CODE_4M.fd|/usr/share/OVMF/OVMF_VARS_4M.fd
 /usr/share/OVMF/OVMF_CODE.fd|/usr/share/OVMF/OVMF_VARS.fd
 /usr/share/edk2/ovmf/OVMF_CODE.fd|/usr/share/edk2/ovmf/OVMF_VARS.fd
+/opt/homebrew/share/qemu/edk2-x86_64-code.fd|/opt/homebrew/share/qemu/edk2-i386-vars.fd
+/usr/local/share/qemu/edk2-x86_64-code.fd|/usr/local/share/qemu/edk2-i386-vars.fd
 EOF
   return 1
 }
@@ -79,7 +82,6 @@ run_interactive() {
 
 test_boot() {
   local timeout_seconds=${BOOT_TIMEOUT_SECONDS:-180}
-  local qemu_pid
   local elapsed=0
 
   [[ $timeout_seconds =~ ^[0-9]+$ && $timeout_seconds -ge 30 && $timeout_seconds -le 600 ]] || {
@@ -92,12 +94,12 @@ test_boot() {
     -display none \
     -monitor none \
     -serial "file:$SERIAL_LOG" &
-  qemu_pid=$!
+  QEMU_PID=$!
 
   cleanup() {
-    if kill -0 "$qemu_pid" >/dev/null 2>&1; then
-      kill "$qemu_pid" >/dev/null 2>&1 || true
-      wait "$qemu_pid" >/dev/null 2>&1 || true
+    if [[ -n $QEMU_PID ]] && kill -0 "$QEMU_PID" >/dev/null 2>&1; then
+      kill "$QEMU_PID" >/dev/null 2>&1 || true
+      wait "$QEMU_PID" >/dev/null 2>&1 || true
     fi
   }
   trap cleanup EXIT INT TERM
@@ -107,7 +109,7 @@ test_boot() {
       printf '[OK] UEFI 启动测试通过，检测到 %s\n' "$BOOT_MARKER"
       return 0
     fi
-    if ! kill -0 "$qemu_pid" >/dev/null 2>&1; then
+    if ! kill -0 "$QEMU_PID" >/dev/null 2>&1; then
       printf '[ERROR] QEMU 在启动标记出现前退出\n' >&2
       tail -n 80 "$SERIAL_LOG" >&2
       return 1

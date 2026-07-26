@@ -21,7 +21,7 @@ case $mode in
     }
     require_confirmation "将通过 apt 安装 LC300A 构建依赖，是否继续？" || exit 1
     run_as_root apt-get update
-    run_as_root apt-get install --no-install-recommends "${LC300A_LINUX_BUILD_PACKAGES[@]}"
+    install_linux_packages "${LC300A_LINUX_BUILD_PACKAGES[@]}"
     "$SCRIPT_DIR/doctor.sh" --strict
     ;;
   *)

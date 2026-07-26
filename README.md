@@ -2,7 +2,7 @@
 
 LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 Debian Stable、Linux LTS、KDE Plasma、Wayland 和 Calamares 为基础，目标是生成可通过 UEFI 启动、可试用、可安装并可更新的桌面操作系统。
 
-当前状态：**阶段 1 — 最小可启动 ISO**。构建与 QEMU/OVMF 测试入口已经实现，但尚未在 x86_64 Linux 构建机完成首次 ISO 验收，也未声明任何真实硬件兼容性。
+当前状态：**阶段 1 — 最小可启动 ISO（完成）**。ISO 已在 Ubuntu 24.04 x86_64 构建环境生成，并通过 QEMU/OVMF UEFI 启动进入可用 Live 控制台。阶段 2 图形桌面尚未完成，也未声明真实硬件兼容性。
 
 ## 技术基线
 
@@ -37,9 +37,15 @@ make iso
 make test-boot
 ```
 
+已有 ISO 时可启动交互式虚拟机：
+
+```bash
+make run-uefi
+```
+
 `make doctor` 只诊断环境，不修改宿主机。`make bootstrap` 会明确请求确认后安装当前平台所需的开发依赖。
 
-ISO 的最终构建和启动测试必须在 Debian/Ubuntu x86_64 环境完成。macOS Apple Silicon 仅支持项目开发、静态检查，以及通过虚拟机或远程 x86_64 Linux 构建机进行构建。详见 `docs/development/environment.md`。
+ISO 构建必须在 Debian/Ubuntu x86_64 环境完成。安装 Homebrew QEMU 后，macOS Apple Silicon 可运行已有 ISO 和执行 UEFI 模拟启动测试；发布验收仍以原生 x86_64 Linux 为准。详见 `docs/development/environment.md`。
 
 ## 项目文档
 

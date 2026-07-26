@@ -78,12 +78,9 @@ def release_files(product: dict) -> dict[str, str]:
     }
 
 
-def live_build_arguments(product: dict) -> list[str]:
-    metadata = product["product"]
+def live_boot_parameters(product: dict) -> str:
     identity = product["identity"]
-    base = product["base"]
-    volume = f'{metadata["name"]}_{metadata["version_id"]}'.replace(".", "_")[:32]
-    boot_parameters = " ".join(
+    return " ".join(
         (
             "boot=live",
             "components",
@@ -96,6 +93,32 @@ def live_build_arguments(product: dict) -> list[str]:
             "console=ttyS0,115200n8",
         )
     )
+
+
+def grub_config(product: dict) -> str:
+    title = product["product"]["display_name"].replace('"', '\\"')
+    return "\n".join(
+        (
+            "set default=0",
+            "set timeout=5",
+            "",
+            f'menuentry "{title} Live" {{',
+            f"    linux /live/vmlinuz {live_boot_parameters(product)}",
+            "    initrd /live/initrd.img",
+            "}",
+            "",
+        )
+    )
+
+
+def iso_volume(product: dict) -> str:
+    metadata = product["product"]
+    return f'{metadata["name"]}_{metadata["version_id"]}'.replace(".", "_")[:32]
+
+
+def live_build_arguments(product: dict) -> list[str]:
+    metadata = product["product"]
+    base = product["base"]
     return [
         "lb",
         "config",
@@ -111,10 +134,14 @@ def live_build_arguments(product: dict) -> list[str]:
         "main contrib non-free-firmware",
         "--binary-images",
         "iso-hybrid",
-        "--bootloaders",
-        "grub-efi",
         "--debian-installer",
-        "none",
+        "false",
+        "--firmware-chroot",
+        "false",
+        "--firmware-binary",
+        "false",
+        "--initsystem",
+        "systemd",
         "--chroot-filesystem",
         "squashfs",
         "--compression",
@@ -124,23 +151,19 @@ def live_build_arguments(product: dict) -> list[str]:
         "--apt-recommends",
         "true",
         "--security",
-        "true",
-        "--updates",
-        "true",
+        "false",
         "--backports",
         "false",
         "--memtest",
         "none",
-        "--image-name",
-        identity["os_release_id"],
         "--iso-application",
         metadata["display_name"],
         "--iso-publisher",
         "LC300A Project",
         "--iso-volume",
-        volume,
+        iso_volume(product),
         "--bootappend-live",
-        boot_parameters,
+        live_boot_parameters(product),
     ]
 
 
@@ -148,13 +171,20 @@ def assemble_inputs(workspace: Path, product: dict) -> None:
     config = workspace / "config"
     package_target = config / "package-lists"
     overlay_target = config / "includes.chroot"
-    hook_target = config / "hooks/live"
-    for target in (package_target, overlay_target, hook_target):
+    hooks_root = config / "hooks"
+    hook_target = hooks_root / "live"
+    archives_target = config / "archives"
+    boot_target = workspace / "lc300a-boot"
+    for target in (package_target, overlay_target, hooks_root, archives_target):
         if target.is_symlink() or target.is_file():
             target.unlink()
         elif target.exists():
             shutil.rmtree(target)
         target.mkdir(parents=True)
+    hook_target.mkdir()
+    if boot_target.exists():
+        shutil.rmtree(boot_target)
+    boot_target.mkdir()
 
     for source in sorted(PACKAGE_LISTS.glob("*.list.chroot")):
         shutil.copy2(source, package_target / source.name)
@@ -165,13 +195,23 @@ def assemble_inputs(workspace: Path, product: dict) -> None:
         ignore=shutil.ignore_patterns(".gitkeep"),
     )
     for source in sorted(HOOKS.glob("*.hook.chroot")):
-        target = hook_target / source.name
-        shutil.copy2(source, target)
-        target.chmod(0o755)
+        for target in (hooks_root / source.name, hook_target / source.name):
+            shutil.copy2(source, target)
+            target.chmod(0o755)
     for relative, content in release_files(product).items():
         target = overlay_target / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
+    security_source = (
+        "deb http://security.debian.org/debian-security "
+        f'{product["base"]["suite"]}-security main contrib non-free-firmware\n'
+    )
+    for suffix in ("chroot", "binary"):
+        (archives_target / f"lc300a-security.list.{suffix}").write_text(
+            security_source, encoding="utf-8"
+        )
+    (boot_target / "grub.cfg").write_text(grub_config(product), encoding="utf-8")
+    (boot_target / "volume-id").write_text(iso_volume(product) + "\n", encoding="ascii")
 
 
 def configure(workspace: Path, run_live_build: bool) -> None:

@@ -29,17 +29,22 @@ def validate() -> None:
         raise ValueError("核心软件包清单缺少启动组件或意外启用 SSH 服务端")
 
     arguments = CONFIGURE.live_build_arguments(product)
-    required_arguments = {
-        "--distribution": "trixie",
-        "--architectures": "amd64",
-        "--binary-images": "iso-hybrid",
-        "--bootloaders": "grub-efi",
-        "--debian-installer": "none",
-    }
-    for option, expected in required_arguments.items():
-        index = arguments.index(option)
-        if arguments[index + 1] != expected:
+    required_arguments = (
+        (arguments, "--distribution", "trixie"),
+        (arguments, "--architectures", "amd64"),
+        (arguments, "--binary-images", "iso-hybrid"),
+        (arguments, "--debian-installer", "false"),
+        (arguments, "--security", "false"),
+        (arguments, "--firmware-chroot", "false"),
+        (arguments, "--firmware-binary", "false"),
+        (arguments, "--initsystem", "systemd"),
+    )
+    for candidate, option, expected in required_arguments:
+        index = candidate.index(option)
+        if candidate[index + 1] != expected:
             raise ValueError(f"live-build 参数错误: {option}")
+    if "--bootloader" in arguments or "--bootloaders" in arguments:
+        raise ValueError("rootfs 配置不应依赖 live-build 的过时 binary bootloader")
     boot_parameters = arguments[arguments.index("--bootappend-live") + 1]
     for value in ("boot=live", "console=ttyS0,115200n8", "username=lc300a-live"):
         if value not in boot_parameters:
@@ -54,6 +59,19 @@ def validate() -> None:
         generated_packages = (config / "package-lists/core.list.chroot").read_text().splitlines()
         if generated_packages != packages:
             raise ValueError("生成的软件包清单与版本控制输入不一致")
+        security_sources = {
+            path.name: path.read_text(encoding="utf-8")
+            for path in (config / "archives").glob("lc300a-security.list.*")
+        }
+        expected_security = (
+            "deb http://security.debian.org/debian-security trixie-security "
+            "main contrib non-free-firmware\n"
+        )
+        if security_sources != {
+            "lc300a-security.list.binary": expected_security,
+            "lc300a-security.list.chroot": expected_security,
+        }:
+            raise ValueError("Debian 安全更新源配置错误")
         overlay = config / "includes.chroot"
         os_release = (overlay / "usr/lib/os-release").read_text(encoding="utf-8")
         live_config = (overlay / "etc/live/config.conf.d/lc300a.conf").read_text(
@@ -80,14 +98,38 @@ def validate() -> None:
             or "getty@tty1.service" not in marker_script
         ):
             raise ValueError("串口启动标记服务配置错误")
-        hook = config / "hooks/live/010-system-defaults.hook.chroot"
-        if not hook.stat().st_mode & stat.S_IXUSR:
-            raise ValueError("chroot hook 不可执行")
+        modern_hook = config / "hooks/live/010-system-defaults.hook.chroot"
+        legacy_hook = config / "hooks/010-system-defaults.hook.chroot"
+        if (
+            modern_hook.read_bytes() != legacy_hook.read_bytes()
+            or not modern_hook.stat().st_mode & stat.S_IXUSR
+            or not legacy_hook.stat().st_mode & stat.S_IXUSR
+        ):
+            raise ValueError("新旧 live-build chroot hook 布局不一致或不可执行")
 
     qemu_script = (PROJECT_ROOT / "scripts/test/qemu-boot.sh").read_text(encoding="utf-8")
-    for value in ("OVMF_CODE_4M.fd", "OVMF_VARS_4M.fd", "if=pflash", "LC300A_BOOT_OK"):
+    for value in (
+        "OVMF_CODE_4M.fd",
+        "OVMF_VARS_4M.fd",
+        "edk2-x86_64-code.fd",
+        "edk2-i386-vars.fd",
+        "if=pflash",
+        "LC300A_BOOT_OK",
+        "QEMU_PID=",
+    ):
         if value not in qemu_script:
             raise ValueError(f"QEMU UEFI 测试缺少契约: {value}")
+    if "local qemu_pid" in qemu_script:
+        raise ValueError("QEMU 清理 trap 不应引用已离开作用域的局部 PID")
+    build_script = (PROJECT_ROOT / "scripts/build/live_build.sh").read_text(encoding="utf-8")
+    for value in (
+        "grub-mkrescue",
+        "mksquashfs",
+        "sha256sum.txt",
+        "-report_el_torito",
+    ):
+        if value not in build_script:
+            raise ValueError(f"UEFI ISO 组装缺少契约: {value}")
 
 
 def main() -> int:

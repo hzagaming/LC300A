@@ -30,6 +30,24 @@ class ConfigureLiveTest(unittest.TestCase):
         self.assertIn("username=lc300a-live", boot_parameters)
         self.assertEqual(arguments[arguments.index("--distribution") + 1], "trixie")
 
+    def test_arguments_only_configure_cross_version_rootfs_options(self):
+        arguments = CONFIGURE.live_build_arguments(self.product)
+        self.assertEqual(arguments[arguments.index("--security") + 1], "false")
+        self.assertEqual(arguments[arguments.index("--firmware-chroot") + 1], "false")
+        self.assertEqual(arguments[arguments.index("--firmware-binary") + 1], "false")
+        self.assertEqual(arguments[arguments.index("--initsystem") + 1], "systemd")
+        self.assertNotIn("--bootloaders", arguments)
+        self.assertNotIn("--bootloader", arguments)
+        self.assertNotIn("--updates", arguments)
+        self.assertNotIn("--image-name", arguments)
+
+    def test_grub_config_boots_live_rootfs(self):
+        config = CONFIGURE.grub_config(self.product)
+        self.assertIn("linux /live/vmlinuz", config)
+        self.assertIn("initrd /live/initrd.img", config)
+        self.assertIn("username=lc300a-live", config)
+        self.assertIn("console=ttyS0,115200n8", config)
+
     def test_rejects_wrong_base(self):
         product = copy.deepcopy(self.product)
         product["base"]["suite"] = "unstable"
@@ -49,6 +67,21 @@ class ConfigureLiveTest(unittest.TestCase):
             stale.write_text("stale", encoding="utf-8")
             CONFIGURE.configure(workspace, False)
             self.assertFalse(stale.exists())
+            security = workspace / "config/archives/lc300a-security.list.chroot"
+            self.assertEqual(
+                security.read_text(encoding="utf-8"),
+                "deb http://security.debian.org/debian-security trixie-security "
+                "main contrib non-free-firmware\n",
+            )
+            binary_security = security.with_suffix(".binary")
+            self.assertEqual(binary_security.read_text(), security.read_text())
+            boot = workspace / "lc300a-boot"
+            self.assertEqual((boot / "grub.cfg").read_text(), CONFIGURE.grub_config(self.product))
+            modern_hook = workspace / "config/hooks/live/010-system-defaults.hook.chroot"
+            legacy_hook = workspace / "config/hooks/010-system-defaults.hook.chroot"
+            self.assertEqual(modern_hook.read_bytes(), legacy_hook.read_bytes())
+            self.assertTrue(modern_hook.stat().st_mode & 0o100)
+            self.assertTrue(legacy_hook.stat().st_mode & 0o100)
 
 
 if __name__ == "__main__":

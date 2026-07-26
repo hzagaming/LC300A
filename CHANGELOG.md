@@ -13,3 +13,6 @@
 - “落川流光”设计令牌、原创 Logo、light/dark 壁纸、可复现 SFX/BGM 资产与无障碍验证。
 - 修复 `make clean` 删除受控构建目录和 `.gitkeep` 的问题。
 - 阶段 1 live-build 组装、最小控制台系统、Live 用户、版本身份、ISO 产物清单和 QEMU/OVMF 启动测试入口。
+- Ubuntu 24.04 旧版 live-build 兼容配置、显式 Debian 13 安全源、systemd 与双 hook 布局。
+- GRUB 2 BIOS/UEFI hybrid ISO 组装、内部/外部 SHA-256、Homebrew OVMF 发现和真实 UEFI 启动验收。
+- 修复非交互 bootstrap 未向 APT 确认、缺少 Debian archive keyring、旧固件扫描、sysvinit 冲突和 QEMU cleanup trap 作用域问题。
