@@ -2,7 +2,7 @@
 
 LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 Debian Stable、Linux LTS、KDE Plasma、Wayland 和 Calamares 为基础，目标是生成可通过 UEFI 启动、可试用、可安装并可更新的桌面操作系统。
 
-当前状态：**阶段 1 — 最小可启动 ISO（完成）**。ISO 已在 Ubuntu 24.04 x86_64 构建环境生成，并通过 QEMU/OVMF UEFI 启动进入可用 Live 控制台。阶段 2 图形桌面尚未完成，也未声明真实硬件兼容性。
+当前状态：**阶段 2 — 图形桌面（进行中）**。Plasma Wayland、SDDM、PipeWire、NetworkManager、基础桌面应用与品牌体验已接入 Live ISO，并通过 QEMU/OVMF 启动和真实帧缓冲 E2E；应用交互、实际网络与音频功能、安装器、原生 x86_64 发布验收及真实硬件兼容性仍待验证。
 
 ## 技术基线
 
@@ -17,7 +17,7 @@ LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 
 
 产品名称、版本和颜色统一配置在 `branding/product.toml`。
 
-原创“落川流光”品牌基础包含 light/dark 语义色、Logo、双主题壁纸及可复现生成的启动/通知/警告声音。资产目前尚未安装到桌面环境，详见 `docs/architecture/brand-experience.md`。
+原创“落川流光”品牌基础包含 light/dark 语义色、Logo、双主题壁纸及可复现生成的启动/通知/警告声音。资产已接入 Plasma、SDDM 与 freedesktop 声音主题，默认关闭且禁止自动播放 BGM，详见 `docs/architecture/brand-experience.md`。
 
 ## 快速开始
 
@@ -35,7 +35,10 @@ make bootstrap
 make doctor-strict
 make iso
 make test-boot
+make test-desktop
 ```
+
+当前开发镜像为 1,760,927,744 字节、1,574 个包，SHA-256：`322e2f16d7ab6ab22900cfc9ac10ccb46ac868c9168dea205ebb03eef9201965`。
 
 已有 ISO 时可启动交互式虚拟机：
 

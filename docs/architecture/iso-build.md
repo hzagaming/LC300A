@@ -2,12 +2,12 @@
 
 ## 范围
 
-LC300A 生成面向 x86_64 UEFI 设备的 Debian Live ISO。阶段 1 使用 live-build 生成 rootfs，再由当前 GRUB 与 xorriso 组装 BIOS/UEFI hybrid ISO；该路径已在 Ubuntu 24.04 x86_64 构建环境和 QEMU/OVMF 中通过验收。
+LC300A 生成面向 x86_64 UEFI 设备的 Debian Live ISO。live-build 生成包含 Plasma/Wayland 的 rootfs，再由 GRUB 与 xorriso 组装 BIOS/UEFI hybrid ISO；阶段 1 控制台路径和阶段 2 当前自动化桌面路径已在 Ubuntu 24.04 x86_64 构建环境及 QEMU/OVMF 中通过验证。
 
 ## 构建数据流
 
 ```text
-branding/product.toml
+branding/product.toml + branding/experience.toml
         │
         ├──> 发行版身份与产物命名
         │
@@ -17,6 +17,8 @@ distro/package-lists + distro/overlays + distro/hooks
                   │
                   ├──> debootstrap / Debian trixie amd64 rootfs
                   ├──> Linux + systemd + Live 用户
+                  ├──> Plasma + Wayland + SDDM + PipeWire
+                  ├──> Logo + 双主题壁纸 + 声音主题
                   └──> 已清理的 chroot
                               │
                               ├──> mksquashfs
@@ -51,16 +53,18 @@ make doctor-strict
 make rootfs
 make iso
 make test-boot
+make test-desktop
 ```
 
 `make iso` 会生成 ISO、SHA-256、软件包清单、构建清单和完整 live-build 日志。重复构建前使用 `make clean CONFIRM=1`；该命令只清理 `build/` 中的生成项并保留受控目录。若 live-build 留下 root 所有权文件，清理命令会在明确确认后请求 sudo。
 
 ## 启动与测试边界
 
-阶段 1 使用 QEMU `q35`、成对 OVMF CODE/VARS pflash 和串口日志验证 UEFI 启动。Live 系统进入 `multi-user.target` 后由一次性 systemd 服务验证 Live 用户、home、shell、sudo 组与 tty1，再输出 `LC300A_BOOT_OK`；测试只有检测到该标记才通过，默认超时 180 秒。macOS Apple Silicon 上的 x86_64 模拟可用于开发验收，但发布验收必须在原生 x86_64 Linux 环境执行。
+阶段 1 验收使用 QEMU `q35`、成对 OVMF CODE/VARS pflash 和串口日志验证 UEFI 启动，并在 Live 用户、home、shell 与 sudo 组就绪后输出 `LC300A_BOOT_OK`。阶段 2 验收等待 SDDM 自动登录、KWin Wayland、PlasmaShell D-Bus、PipeWire、WirePlumber 与 Wayland socket 就绪，所有谓词均失败关闭；输出 `LC300A_DESKTOP_OK` 后在有限时间内抓取并验证真实帧缓冲，拒绝纯色、低亮度及大面积黑屏。TCG 使用 `qemu64`，KVM 使用 `host` CPU。
+
+virtio-pci DRM 在当前无 3D QEMU 路径中禁用 KWin atomic modesetting，避免 KWin 逻辑输出已启用但内核 CRTC/scanout 仍关闭；其他 DRM 驱动保持默认。PlasmaShell 启动前会等待内核 DRM connector 与 KWin 输出同时启用，仅当 KWin 明确使用 llvmpipe 时才切换到软件 Qt Quick。这样既覆盖无 3D 虚拟机的 EGL/DRI2 失败，也不改变真实硬件的渲染路径。macOS Apple Silicon 上的 x86_64 模拟可用于开发验收，但发布验收必须在原生 x86_64 Linux 环境执行。
 
 ## 后续阶段接口
 
-- 阶段 2 在包清单和 overlay 中增加 Plasma/Wayland/SDDM，不修改阶段 1 的可启动验收。
 - 阶段 3 将 Calamares 作为 Live 会话应用加入，安装用户与 Live 用户严格分离。
 - Btrfs 快照与回滚保留为后续设计；首版安装目标使用 ext4。

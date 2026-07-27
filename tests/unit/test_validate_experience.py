@@ -44,6 +44,12 @@ class ExperienceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             VALIDATOR.validate_policy(experience, self.sound_theme)
 
+    def test_rejects_unimplemented_quiet_hours_claim(self):
+        experience = copy.deepcopy(self.experience)
+        experience["audio"]["quiet_hours_supported"] = True
+        with self.assertRaises(ValueError):
+            VALIDATOR.validate_policy(experience, self.sound_theme)
+
     def test_rejects_small_touch_targets(self):
         experience = copy.deepcopy(self.experience)
         experience["layout"]["touch_target_px"] = 32

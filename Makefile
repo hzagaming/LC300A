@@ -13,8 +13,8 @@ help: ## 显示命令说明
 	  '  make brand-assets    重新生成原创品牌声音资产' \
 	  '  make test            运行当前阶段测试' \
 	  '  make lint            运行静态检查' \
-	  '  make rootfs          构建阶段 1 根文件系统' \
-	  '  make iso             构建阶段 1 Live ISO' \
+	  '  make rootfs          构建 Live 根文件系统' \
+	  '  make iso             构建当前 Live ISO' \
 	  '  make run             通过 QEMU/OVMF 启动 ISO' \
 	  '  make run-uefi        通过 QEMU/OVMF 启动 ISO' \
 	  '  make test-boot       运行 UEFI 串口启动测试' \
@@ -53,7 +53,10 @@ run run-uefi:
 test-boot:
 	@./scripts/test/qemu-boot.sh test
 
-test-desktop test-installer release:
+test-desktop:
+	@./scripts/test/qemu-boot.sh desktop
+
+test-installer release:
 	@./scripts/build/stage-gate.sh "$@"
 
 clean:

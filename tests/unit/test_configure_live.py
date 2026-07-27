@@ -82,6 +82,15 @@ class ConfigureLiveTest(unittest.TestCase):
             self.assertEqual(modern_hook.read_bytes(), legacy_hook.read_bytes())
             self.assertTrue(modern_hook.stat().st_mode & 0o100)
             self.assertTrue(legacy_hook.stat().st_mode & 0o100)
+            overlay = workspace / "config/includes.chroot"
+            for relative in (
+                "usr/share/pixmaps/lc300a-mark.svg",
+                "usr/share/wallpapers/LC300AFlow/contents/images/3840x2160.svg",
+                "usr/share/wallpapers/LC300AFlow/contents/images_dark/3840x2160.svg",
+                "usr/share/sounds/luochuan-flow/stereo/desktop-login.wav",
+                "usr/share/sounds/luochuan-flow/preview/ambient-preview.wav",
+            ):
+                self.assertTrue((overlay / relative).is_file(), relative)
 
 
 if __name__ == "__main__":

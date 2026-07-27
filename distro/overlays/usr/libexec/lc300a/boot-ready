@@ -15,7 +15,6 @@ case $user_shell in
   *) exit 1 ;;
 esac
 id -nG "$LIVE_USERNAME" | tr ' ' '\n' | grep -qx sudo
-systemctl --quiet is-active getty@tty1.service
 
 printf '%s\n' "$marker"
 if [ -w /dev/ttyS0 ]; then

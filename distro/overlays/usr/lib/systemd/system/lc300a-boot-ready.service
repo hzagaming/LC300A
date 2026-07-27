@@ -1,7 +1,6 @@
 [Unit]
 Description=LC300A boot readiness marker
-Wants=getty@tty1.service
-After=live-config.service getty@tty1.service systemd-user-sessions.service
+After=live-config.service systemd-user-sessions.service
 
 [Service]
 Type=oneshot

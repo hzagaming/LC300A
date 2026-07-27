@@ -92,6 +92,8 @@ def validate_policy(experience: dict, sound_theme: dict) -> None:
             raise ValueError(f"audio.{key} 超出安全默认范围")
     if audio["background_music_enabled"] or audio["background_music_autoplay"]:
         raise ValueError("背景音乐必须默认关闭且禁止自动播放")
+    if audio["quiet_hours_supported"]:
+        raise ValueError("安静时段策略尚未实现，不得声明支持")
 
     ambient = sound_theme["sounds"]["ambient"]
     if ambient["enabled_by_default"] or ambient["autoplay"] or ambient["loop"]:

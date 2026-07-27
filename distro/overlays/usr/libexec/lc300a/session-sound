@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -eu
+
+attempt=0
+while [ "$attempt" -lt 15 ]; do
+  volume=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null || true)
+  case $volume in
+    *MUTED*) exit 0 ;;
+    Volume:*)
+      exec pw-play --volume=0.45 /usr/share/sounds/luochuan-flow/stereo/desktop-login.wav
+      ;;
+  esac
+  attempt=$((attempt + 1))
+  sleep 1
+done
+
+exit 0

@@ -48,4 +48,4 @@ startup_volume = 0.45
 background_music_enabled = false
 background_music_autoplay = false
 background_music_volume = 0.20
-quiet_hours_supported = true
+quiet_hours_supported = false

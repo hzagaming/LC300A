@@ -1,0 +1,31 @@
+#!/bin/sh
+
+set -eu
+
+drm_output_enabled() {
+  for state in /sys/class/drm/card*-*/enabled; do
+    [ -f "$state" ] || continue
+    [ "$(cat "$state")" = enabled ] && return 0
+  done
+  return 1
+}
+
+attempt=0
+info=
+while [ "$attempt" -lt 120 ]; do
+  info=$(qdbus6 org.kde.KWin /KWin supportInformation 2>/dev/null || :)
+  if printf '%s\n' "$info" | grep -Eq 'Number of Screens: [1-9]' \
+    && printf '%s\n' "$info" | grep -q 'Enabled: 1' \
+    && drm_output_enabled; then
+    break
+  fi
+  attempt=$((attempt + 1))
+  sleep 1
+done
+[ "$attempt" -lt 120 ] || exit 1
+
+if printf '%s\n' "$info" | grep -q 'OpenGL renderer string: llvmpipe'; then
+  export QT_QUICK_BACKEND=software
+fi
+
+exec /usr/bin/plasmashell --no-respawn

@@ -10,6 +10,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PRODUCT_PATH = PROJECT_ROOT / "branding/product.toml"
+EXPERIENCE_PATH = PROJECT_ROOT / "branding/experience.toml"
 PACKAGE_LISTS = PROJECT_ROOT / "distro/package-lists"
 OVERLAYS = PROJECT_ROOT / "distro/overlays"
 HOOKS = PROJECT_ROOT / "distro/hooks"
@@ -18,6 +19,10 @@ DEFAULT_WORKSPACE = PROJECT_ROOT / "build/live-build/work"
 
 def product_config() -> dict:
     return tomllib.loads(PRODUCT_PATH.read_text(encoding="utf-8"))
+
+
+def experience_config() -> dict:
+    return tomllib.loads(EXPERIENCE_PATH.read_text(encoding="utf-8"))
 
 
 def quote_release(value: str) -> str:
@@ -70,12 +75,49 @@ def release_files(product: dict) -> dict[str, str]:
         )
     )
     sudoers = f'{identity["live_user"]} ALL=(ALL:ALL) NOPASSWD: ALL\n'
+    sddm = "\n".join(
+        (
+            "[Autologin]",
+            f'User={identity["live_user"]}',
+            "Session=plasma",
+            "Relogin=false",
+            "",
+            "[Theme]",
+            "Current=breeze",
+            "",
+        )
+    )
     return {
         "usr/lib/os-release": os_release,
         "etc/lc300a-release": lc300a_release,
         "etc/live/config.conf.d/lc300a.conf": live_config,
         "etc/sudoers.d/010_lc300a-live": sudoers,
+        "etc/sddm.conf.d/lc300a.conf": sddm,
     }
+
+
+def brand_assets() -> dict[Path, str]:
+    experience = experience_config()
+    sound_theme_path = PROJECT_ROOT / experience["assets"]["sound_theme"]
+    sound_theme = tomllib.loads(sound_theme_path.read_text(encoding="utf-8"))
+    assets = {
+        PROJECT_ROOT / experience["assets"]["logo"]: "usr/share/pixmaps/lc300a-mark.svg",
+        PROJECT_ROOT / experience["assets"]["wallpaper_light"]: (
+            "usr/share/wallpapers/LC300AFlow/contents/images/3840x2160.svg"
+        ),
+        PROJECT_ROOT / experience["assets"]["wallpaper_dark"]: (
+            "usr/share/wallpapers/LC300AFlow/contents/images_dark/3840x2160.svg"
+        ),
+    }
+    destinations = {
+        "startup": "usr/share/sounds/luochuan-flow/stereo/desktop-login.wav",
+        "notification": "usr/share/sounds/luochuan-flow/stereo/message-new-instant.wav",
+        "warning": "usr/share/sounds/luochuan-flow/stereo/dialog-warning.wav",
+        "ambient": "usr/share/sounds/luochuan-flow/preview/ambient-preview.wav",
+    }
+    for sound_id, destination in destinations.items():
+        assets[sound_theme_path.parent / sound_theme["sounds"][sound_id]["file"]] = destination
+    return assets
 
 
 def live_boot_parameters(product: dict) -> str:
@@ -194,6 +236,10 @@ def assemble_inputs(workspace: Path, product: dict) -> None:
         dirs_exist_ok=True,
         ignore=shutil.ignore_patterns(".gitkeep"),
     )
+    for source, relative in brand_assets().items():
+        target = overlay_target / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
     for source in sorted(HOOKS.glob("*.hook.chroot")):
         for target in (hooks_root / source.name, hook_target / source.name):
             shutil.copy2(source, target)
@@ -222,7 +268,7 @@ def configure(workspace: Path, run_live_build: bool) -> None:
         "architecture": "amd64",
         "firmware": "uefi",
     }:
-        raise ValueError("product base configuration does not match stage 1")
+        raise ValueError("product base configuration does not match the supported build target")
     workspace.mkdir(parents=True, exist_ok=True)
     if run_live_build:
         subprocess.run(live_build_arguments(product), cwd=workspace, check=True)

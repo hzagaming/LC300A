@@ -22,11 +22,17 @@
 
 验收：ISO 在 QEMU 中通过 UEFI 启动并进入 shell。
 
-## 阶段 2：图形桌面（0.2.0，下一阶段）
+## 阶段 2：图形桌面（0.2.0，进行中）
 
 实现 SDDM、KDE Plasma、Wayland、XWayland、基础品牌、网络、音频、文件管理器、终端和浏览器。
 
-验收：Live ISO 自动进入桌面，终端和浏览器可用且网络测试通过。
+- [x] Plasma Wayland 与 SDDM Live 自动登录
+- [x] NetworkManager、PipeWire、WirePlumber 与基础桌面应用
+- [x] Logo、壁纸、配色、登录界面与声音主题
+- [x] QEMU/OVMF 桌面就绪与真实帧缓冲 E2E
+- [ ] 终端、浏览器、网络与音频功能 E2E
+
+验收：Live ISO 自动进入桌面，终端和浏览器可用，网络与音频服务正常，并通过真实帧缓冲验收。
 
 ## 阶段 3：图形安装器（0.3.0）
 

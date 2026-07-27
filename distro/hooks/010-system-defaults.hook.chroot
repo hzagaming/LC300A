@@ -12,9 +12,13 @@ update-locale LANG=en_US.UTF-8
 passwd --lock root
 chmod 0440 /etc/sudoers.d/010_lc300a-live
 chmod 0755 /usr/libexec/lc300a/boot-ready
+chmod 0755 /usr/libexec/lc300a/desktop-ready /usr/libexec/lc300a/session-sound \
+  /usr/libexec/lc300a/start-kwin-wayland /usr/libexec/lc300a/start-plasmashell
 systemctl enable NetworkManager.service
 systemctl enable lc300a-boot-ready.service
-systemctl set-default multi-user.target
+systemctl enable sddm.service
+systemctl enable lc300a-desktop-ready.service
+systemctl set-default graphical.target
 
 rm -f /var/lib/dbus/machine-id
 : >/etc/machine-id

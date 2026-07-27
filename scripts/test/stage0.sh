@@ -61,6 +61,7 @@ done
 python3 scripts/test/validate_product.py
 python3 scripts/test/validate_experience.py
 python3 scripts/test/validate_live_build.py
+python3 scripts/test/validate_desktop.py
 python3 scripts/build/generate_sounds.py --check
 python3 scripts/test/repository_hygiene.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/unit -p 'test_*.py'

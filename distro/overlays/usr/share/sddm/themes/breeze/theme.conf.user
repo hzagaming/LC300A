@@ -1,0 +1,9 @@
+[General]
+background=/usr/share/wallpapers/LC300AFlow/contents/images/3840x2160.svg
+color=#315C9B
+fontSize=10
+logo=/usr/share/pixmaps/lc300a-mark.svg
+needsFullUserModel=false
+showClock=true
+showlogo=shown
+type=image

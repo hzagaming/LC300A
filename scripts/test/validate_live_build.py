@@ -95,7 +95,8 @@ def validate() -> None:
             or "After=live-config.service" not in service
             or "LC300A_BOOT_OK" not in marker_script
             or 'id "$LIVE_USERNAME"' not in marker_script
-            or "getty@tty1.service" not in marker_script
+            or "getty@tty1.service" in service
+            or "getty@tty1.service" in marker_script
         ):
             raise ValueError("串口启动标记服务配置错误")
         modern_hook = config / "hooks/live/010-system-defaults.hook.chroot"
@@ -124,6 +125,7 @@ def validate() -> None:
     build_script = (PROJECT_ROOT / "scripts/build/live_build.sh").read_text(encoding="utf-8")
     for value in (
         "grub-mkrescue",
+        "lb clean --chroot --stage",
         "mksquashfs",
         "sha256sum.txt",
         "-report_el_torito",

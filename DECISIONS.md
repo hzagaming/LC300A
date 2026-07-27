@@ -40,4 +40,11 @@
 - 状态：接受
 - 日期：2026-07-26
 
-light/dark 颜色集中在 `branding/product.toml`，排版、布局、动效、可访问性和声音策略集中在 `branding/experience.toml`。背景音乐默认关闭且禁止自动播放；事件音服从系统静音和减少干扰设置。阶段 0 只提供经过验证的原创资产，不提前声明已集成桌面环境。
+light/dark 颜色集中在 `branding/product.toml`，排版、布局、动效、可访问性和声音策略集中在 `branding/experience.toml`。背景音乐默认关闭且禁止自动播放；启动音服从系统静音，安静时段策略待实现。阶段 0 只提供经过验证的原创资产，不提前声明已集成桌面环境。
+
+## ADR-007：无 3D Plasma 会话采用条件化软件渲染
+
+- 状态：接受
+- 日期：2026-07-27
+
+virtio-pci DRM 在当前无 3D QEMU 路径中禁用 KWin atomic modesetting，其他 DRM 驱动保持默认；只有 KWin renderer 为 llvmpipe 时，PlasmaShell 才使用软件 Qt Quick。PlasmaShell 启动和桌面就绪状态都要求内核 DRM connector 实际启用，桌面就绪还要求 PlasmaShell D-Bus 可响应，并由 QEMU 真实帧缓冲验证；禁止仅凭进程或 KWin 逻辑输出存在报告成功。

@@ -20,6 +20,12 @@ source "$PROJECT_ROOT/scripts/bootstrap/lib.sh"
 prepare() {
   "$PROJECT_ROOT/scripts/bootstrap/doctor.sh" --strict
   mkdir -p "$WORKSPACE" "$ARTIFACTS"
+  if [[ -d $WORKSPACE/chroot || -d $WORKSPACE/.build ]]; then
+    (
+      cd "$WORKSPACE"
+      run_as_root lb clean --chroot --stage
+    )
+  fi
   python3 "$SCRIPT_DIR/configure_live.py" --workspace "$WORKSPACE"
 }
 

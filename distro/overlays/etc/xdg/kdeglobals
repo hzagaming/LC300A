@@ -1,0 +1,15 @@
+[General]
+ColorScheme=LuochuanFlow
+font=Noto Sans CJK SC,10,-1,5,50,0,0,0,0,0
+fixed=Noto Sans Mono CJK SC,10,-1,5,50,0,0,0,0,0
+
+[Icons]
+Theme=breeze
+
+[KDE]
+LookAndFeelPackage=org.lc300a.desktop
+SingleClick=false
+widgetStyle=Breeze
+
+[Sounds]
+Theme=luochuan-flow

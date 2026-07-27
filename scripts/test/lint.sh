@@ -37,6 +37,7 @@ printf '[OK] Bash 语法检查通过（%s 个文件）\n' "${#shell_files[@]}"
 python3 scripts/test/validate_product.py
 python3 scripts/test/validate_experience.py
 python3 scripts/test/validate_live_build.py
+python3 scripts/test/validate_desktop.py
 python3 scripts/test/repository_hygiene.py
 
 if command -v shellcheck >/dev/null 2>&1; then

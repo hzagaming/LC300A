@@ -1,0 +1,13 @@
+[Unit]
+Description=LC300A graphical desktop readiness marker
+Wants=display-manager.service NetworkManager.service
+After=display-manager.service NetworkManager.service live-config.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/lc300a/desktop-ready
+StandardOutput=journal+console
+TimeoutStartSec=300
+
+[Install]
+WantedBy=graphical.target

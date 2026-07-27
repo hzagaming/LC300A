@@ -1,0 +1,14 @@
+{
+  "KPackageStructure": "Plasma/LookAndFeel",
+  "KPlugin": {
+    "Authors": [
+      {
+        "Name": "LC300A Project"
+      }
+    ],
+    "Description": "LC300A Luochuan Flow desktop defaults",
+    "Id": "org.lc300a.desktop",
+    "License": "GPL-3.0-or-later",
+    "Name": "落川流光"
+  }
+}

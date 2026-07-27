@@ -1,0 +1,12 @@
+{
+  "KPlugin": {
+    "Authors": [
+      {
+        "Name": "LC300A Project"
+      }
+    ],
+    "Id": "LC300AFlow",
+    "License": "CC-BY-SA-4.0",
+    "Name": "落川流光"
+  }
+}

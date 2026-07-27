@@ -1,0 +1,54 @@
+#!/bin/sh
+
+set -eu
+
+config=/etc/live/config.conf.d/lc300a.conf
+marker=LC300A_DESKTOP_OK
+
+# shellcheck source=/dev/null
+. "$config"
+uid=$(id -u "$LIVE_USERNAME")
+runtime_dir=/run/user/$uid
+
+drm_output_enabled() {
+  for state in /sys/class/drm/card*-*/enabled; do
+    [ -f "$state" ] || continue
+    [ "$(cat "$state")" = enabled ] && return 0
+  done
+  return 1
+}
+
+ready() {
+  systemctl --quiet is-active display-manager.service || return 1
+  systemctl --quiet is-active NetworkManager.service || return 1
+  pgrep -u "$uid" -x kwin_wayland >/dev/null || return 1
+  pgrep -u "$uid" -x plasmashell >/dev/null || return 1
+  pgrep -u "$uid" -x pipewire >/dev/null || return 1
+  pgrep -u "$uid" -x wireplumber >/dev/null || return 1
+  test -d "$runtime_dir" || return 1
+  find "$runtime_dir" -maxdepth 1 -type s -name 'wayland-*' -print -quit 2>/dev/null \
+    | grep -q . || return 1
+  test -S "$runtime_dir/bus" || return 1
+  drm_output_enabled || return 1
+  runuser -u "$LIVE_USERNAME" -- env \
+    "DBUS_SESSION_BUS_ADDRESS=unix:path=$runtime_dir/bus" \
+    qdbus6 org.kde.plasmashell /PlasmaShell org.freedesktop.DBus.Peer.Ping >/dev/null 2>&1 || return 1
+  command -v dolphin >/dev/null || return 1
+  command -v firefox-esr >/dev/null || return 1
+  command -v konsole >/dev/null || return 1
+}
+
+attempt=0
+while [ "$attempt" -lt 240 ]; do
+  if ready; then
+    printf '%s\n' "$marker"
+    if [ -w /dev/ttyS0 ]; then
+      printf '%s\n' "$marker" >/dev/ttyS0
+    fi
+    exit 0
+  fi
+  attempt=$((attempt + 1))
+  sleep 1
+done
+
+exit 1

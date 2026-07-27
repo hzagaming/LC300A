@@ -1,0 +1,7 @@
+[Sound Theme]
+Name=落川流光
+Comment=LC300A accessible desktop event sounds
+Directories=stereo
+
+[stereo]
+OutputProfile=stereo
