@@ -29,6 +29,7 @@
 - [x] Plasma Wayland 与 SDDM Live 自动登录
 - [x] NetworkManager、PipeWire、WirePlumber 与基础桌面应用
 - [x] Logo、壁纸、配色、登录界面与声音主题
+- [x] Plymouth 品牌启动界面与 GRUB diagnostics 恢复入口
 - [x] QEMU/OVMF 桌面就绪与真实帧缓冲 E2E
 - [ ] 终端、浏览器、网络与音频功能 E2E
 

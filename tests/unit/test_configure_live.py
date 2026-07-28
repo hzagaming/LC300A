@@ -28,6 +28,13 @@ class ConfigureLiveTest(unittest.TestCase):
         arguments = CONFIGURE.live_build_arguments(self.product)
         boot_parameters = arguments[arguments.index("--bootappend-live") + 1]
         self.assertIn("username=lc300a-live", boot_parameters)
+        for parameter in (
+            "quiet",
+            "splash",
+            "plymouth.ignore-serial-consoles",
+            "systemd.show_status=auto",
+        ):
+            self.assertIn(parameter, boot_parameters)
         self.assertEqual(arguments[arguments.index("--distribution") + 1], "trixie")
 
     def test_arguments_only_configure_cross_version_rootfs_options(self):
@@ -47,6 +54,10 @@ class ConfigureLiveTest(unittest.TestCase):
         self.assertIn("initrd /live/initrd.img", config)
         self.assertIn("username=lc300a-live", config)
         self.assertIn("console=ttyS0,115200n8", config)
+        self.assertIn('menuentry "落川OS 300型 Live (diagnostics)"', config)
+        diagnostic = config.split('menuentry "落川OS 300型 Live (diagnostics)"', 1)[1]
+        self.assertNotIn(" quiet ", diagnostic)
+        self.assertNotIn(" splash ", diagnostic)
 
     def test_rejects_wrong_base(self):
         product = copy.deepcopy(self.product)
@@ -84,7 +95,11 @@ class ConfigureLiveTest(unittest.TestCase):
             self.assertTrue(legacy_hook.stat().st_mode & 0o100)
             overlay = workspace / "config/includes.chroot"
             for relative in (
+                "etc/plymouth/plymouthd.conf",
                 "usr/share/pixmaps/lc300a-mark.svg",
+                "usr/share/plymouth/themes/lc300a/lc300a-mark.png",
+                "usr/share/plymouth/themes/lc300a/lc300a.plymouth",
+                "usr/share/plymouth/themes/lc300a/lc300a.script",
                 "usr/share/wallpapers/LC300AFlow/contents/images/3840x2160.svg",
                 "usr/share/wallpapers/LC300AFlow/contents/images_dark/3840x2160.svg",
                 "usr/share/sounds/luochuan-flow/stereo/desktop-login.wav",

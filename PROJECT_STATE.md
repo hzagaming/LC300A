@@ -1,6 +1,6 @@
 # 项目状态
 
-最后更新：2026-07-27
+最后更新：2026-07-28
 
 ## 当前阶段
 
@@ -17,6 +17,7 @@
 - 已实现 live-build rootfs、显式 Debian 安全源、GRUB BIOS/UEFI hybrid ISO、Live 用户、root 锁定、串口启动标记、哈希/包清单/构建清单和 QEMU/OVMF 测试。
 - 当前宿主机为 macOS 26.4 arm64；通过 QEMU/Lima 模拟的 Ubuntu 24.04 x86_64 构建机生成 ISO，宿主 QEMU 11.0.3 完成 UEFI 启动测试。
 - Plasma、Wayland、XWayland、SDDM、PipeWire、NetworkManager、Firefox、Dolphin、Konsole 与“落川流光”品牌资产已接入 Live ISO。
+- Plymouth 品牌启动界面已接入默认启动路径；GRUB 保留无 quiet/splash 的 diagnostics 入口，图形渲染失败不阻断 systemd、SDDM 或 Plasma。
 - 阶段 2 镜像已通过自动登录、Plasma/Wayland、音频服务状态、D-Bus 就绪和真实帧缓冲 E2E；应用交互、实际网络与音频功能、安装器及真实硬件支持尚未验证。
 
 ## 已验证
@@ -35,8 +36,9 @@
 - CI YAML 本地语法解析通过；GitHub Actions 因本机缺少 GitHub 凭据尚未实际运行。
 - Ubuntu 24.04 x86_64：bootstrap、严格 doctor、lint、test 与 `make iso` 通过，生成 ISO 及 SHA-256、包清单、构建清单和日志。
 - xorriso 验证 ISO 含 protective MBR、GPT、BIOS GRUB 和 EFI El Torito 启动项；宿主 QEMU/OVMF `make test-boot` 检测到 `LC300A_BOOT_OK`。
-- 当前阶段 2 ISO 为 1,760,927,744 字节、1,574 个包，SHA-256 为 `322e2f16d7ab6ab22900cfc9ac10ccb46ac868c9168dea205ebb03eef9201965`。
+- 当前阶段 2 ISO 为 2,684,534,784 字节、1,581 个包，SHA-256 为 `bd17e483d869a5875272c5f2a08df81c75be0129c511c4a223e3769dc1b9909b`。
 - 启动标记出现前已验证 Live 用户、home、有效 shell 和 sudo 组，不再错误绑定固定 tty。
+- `make test-boot` 在 quiet/splash 默认路径检测到 `LC300A_BOOT_OK`；18–30 秒启动帧显示 Logo、渐变背景、标题和 `STARTING` 呼吸指示器，连续八帧哈希均不同。
 - `make test-desktop` 检测到 `LC300A_DESKTOP_OK`，并验证 1280×800 真实帧缓冲已绘制品牌壁纸、Plasma 面板与系统托盘，且不再自动弹出上游 Welcome Center；就绪探针失败关闭，截图校验拒绝纯色及大面积黑屏。
 - 最终 ISO 串口审计确认 NetworkManager 已连接，PipeWire、pipewire-pulse 与 WirePlumber 均为 active；这些服务状态不代替实际联网与音频输出验收。
 

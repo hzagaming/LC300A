@@ -19,6 +19,9 @@ network-manager
 nftables
 openssh-client
 pciutils
+plymouth
+plymouth-label
+plymouth-themes
 sudo
 systemd-sysv
 usbutils

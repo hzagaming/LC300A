@@ -17,7 +17,7 @@ LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 
 
 产品名称、版本和颜色统一配置在 `branding/product.toml`。
 
-原创“落川流光”品牌基础包含 light/dark 语义色、Logo、双主题壁纸及可复现生成的启动/通知/警告声音。资产已接入 Plasma、SDDM 与 freedesktop 声音主题，默认关闭且禁止自动播放 BGM，详见 `docs/architecture/brand-experience.md`。
+原创“落川流光”品牌基础包含 light/dark 语义色、Logo、双主题壁纸、Plymouth 图形启动界面及可复现生成的启动/通知/警告声音。资产已接入启动流程、Plasma、SDDM 与 freedesktop 声音主题，默认关闭且禁止自动播放 BGM，详见 `docs/architecture/brand-experience.md`。
 
 ## 快速开始
 
@@ -38,12 +38,23 @@ make test-boot
 make test-desktop
 ```
 
-当前开发镜像为 1,760,927,744 字节、1,574 个包，SHA-256：`322e2f16d7ab6ab22900cfc9ac10ccb46ac868c9168dea205ebb03eef9201965`。
+当前开发镜像为 2,684,534,784 字节、1,581 个包，SHA-256：`bd17e483d869a5875272c5f2a08df81c75be0129c511c4a223e3769dc1b9909b`。
 
-已有 ISO 时可启动交互式虚拟机：
+### 启动系统
+
+已有 ISO 时启动交互式虚拟机：
 
 ```bash
 make run-uefi
+```
+
+GRUB 默认在 3 秒后进入带 LC300A 图形启动界面的 `落川OS 300型 Live`。如果画面停住或需要排错，在 GRUB 中按方向键选择 `Live (diagnostics)`，再按 Enter 查看完整启动日志。
+
+只做自动验收时：
+
+```bash
+make test-boot
+make test-desktop
 ```
 
 `make doctor` 只诊断环境，不修改宿主机。`make bootstrap` 会明确请求确认后安装当前平台所需的开发依赖。

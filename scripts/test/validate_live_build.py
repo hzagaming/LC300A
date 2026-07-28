@@ -24,7 +24,16 @@ def validate() -> None:
     ).read_text(encoding="utf-8").splitlines()
     if packages != sorted(set(packages)):
         raise ValueError("核心软件包清单必须排序且不能重复")
-    required = {"linux-image-amd64", "live-boot", "live-config", "systemd-sysv", "sudo"}
+    required = {
+        "linux-image-amd64",
+        "live-boot",
+        "live-config",
+        "plymouth",
+        "plymouth-label",
+        "plymouth-themes",
+        "sudo",
+        "systemd-sysv",
+    }
     if not required.issubset(packages) or "openssh-server" in packages:
         raise ValueError("核心软件包清单缺少启动组件或意外启用 SSH 服务端")
 
@@ -46,7 +55,15 @@ def validate() -> None:
     if "--bootloader" in arguments or "--bootloaders" in arguments:
         raise ValueError("rootfs 配置不应依赖 live-build 的过时 binary bootloader")
     boot_parameters = arguments[arguments.index("--bootappend-live") + 1]
-    for value in ("boot=live", "console=ttyS0,115200n8", "username=lc300a-live"):
+    for value in (
+        "boot=live",
+        "console=ttyS0,115200n8",
+        "plymouth.ignore-serial-consoles",
+        "quiet",
+        "splash",
+        "systemd.show_status=auto",
+        "username=lc300a-live",
+    ):
         if value not in boot_parameters:
             raise ValueError(f"缺少启动参数: {value}")
 
@@ -78,12 +95,27 @@ def validate() -> None:
             encoding="utf-8"
         )
         sudoers = (overlay / "etc/sudoers.d/010_lc300a-live").read_text(encoding="utf-8")
+        plymouth_config = (overlay / "etc/plymouth/plymouthd.conf").read_text(
+            encoding="utf-8"
+        )
+        plymouth_theme = overlay / "usr/share/plymouth/themes/lc300a"
         if 'ID="lc300a"' not in os_release or 'VERSION_CODENAME="trixie"' not in os_release:
             raise ValueError("生成的 os-release 身份错误")
         if 'LIVE_USERNAME="lc300a-live"' not in live_config:
             raise ValueError("Live 用户配置未从产品配置生成")
         if sudoers != "lc300a-live ALL=(ALL:ALL) NOPASSWD: ALL\n":
             raise ValueError("Live sudoers 配置错误")
+        if "Theme=lc300a" not in plymouth_config:
+            raise ValueError("Plymouth 未选择 LC300A 图形启动主题")
+        for name in ("lc300a-mark.png", "lc300a.plymouth", "lc300a.script"):
+            if not (plymouth_theme / name).is_file():
+                raise ValueError(f"Plymouth 主题缺少文件: {name}")
+        plymouth_script = (plymouth_theme / "lc300a.script").read_text(encoding="utf-8")
+        if "Image.Solid" in plymouth_script:
+            raise ValueError("Plymouth 主题使用当前 script 插件不支持的 Image.Solid")
+        for value in ("Plymouth.SetRefreshFunction", "SetOpacity"):
+            if value not in plymouth_script:
+                raise ValueError(f"Plymouth 启动状态动画缺少: {value}")
         service = (overlay / "usr/lib/systemd/system/lc300a-boot-ready.service").read_text(
             encoding="utf-8"
         )
@@ -107,6 +139,14 @@ def validate() -> None:
             or not legacy_hook.stat().st_mode & stat.S_IXUSR
         ):
             raise ValueError("新旧 live-build chroot hook 布局不一致或不可执行")
+        hook = modern_hook.read_text(encoding="utf-8")
+        for value in ("plymouth-set-default-theme lc300a", "update-initramfs -u"):
+            if value not in hook:
+                raise ValueError(f"Plymouth initramfs 集成缺少: {value}")
+
+        grub = (workspace / "lc300a-boot/grub.cfg").read_text(encoding="utf-8")
+        if 'menuentry "落川OS 300型 Live (diagnostics)"' not in grub:
+            raise ValueError("GRUB 缺少可恢复完整日志的诊断入口")
 
     qemu_script = (PROJECT_ROOT / "scripts/test/qemu-boot.sh").read_text(encoding="utf-8")
     for value in (
@@ -116,6 +156,7 @@ def validate() -> None:
         "edk2-i386-vars.fd",
         "if=pflash",
         "LC300A_BOOT_OK",
+        "LC300A_ISO_PATH",
         "QEMU_PID=",
     ):
         if value not in qemu_script:

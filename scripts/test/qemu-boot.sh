@@ -6,7 +6,7 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 readonly SCRIPT_DIR
 PROJECT_ROOT=$(cd -- "$SCRIPT_DIR/../.." && pwd)
 readonly PROJECT_ROOT
-readonly ISO_PATH="$PROJECT_ROOT/build/artifacts/LC300A-x86_64.iso"
+readonly ISO_PATH="${LC300A_ISO_PATH:-$PROJECT_ROOT/build/artifacts/LC300A-x86_64.iso}"
 readonly SERIAL_LOG="$PROJECT_ROOT/build/artifacts/boot-serial.log"
 readonly OVMF_VARS_COPY="$PROJECT_ROOT/build/artifacts/OVMF_VARS.fd"
 readonly MONITOR_SOCKET="$PROJECT_ROOT/build/artifacts/qemu-monitor.sock"

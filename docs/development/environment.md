@@ -41,3 +41,10 @@ make run-uefi
 # 或执行无界面串口验收
 BOOT_TIMEOUT_SECONDS=600 make test-boot
 ```
+
+验证候选镜像且不覆盖默认产物时，可传入绝对或相对路径：
+
+```bash
+LC300A_ISO_PATH=/tmp/LC300A-candidate.iso make test-boot
+LC300A_ISO_PATH=/tmp/LC300A-candidate.iso make test-desktop
+```

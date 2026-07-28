@@ -120,21 +120,30 @@ def brand_assets() -> dict[Path, str]:
     return assets
 
 
-def live_boot_parameters(product: dict) -> str:
+def live_boot_parameters(product: dict, graphical: bool = True) -> str:
     identity = product["identity"]
-    return " ".join(
-        (
-            "boot=live",
-            "components",
-            f'username={identity["live_user"]}',
-            f'hostname={identity["hostname_prefix"]}-live',
-            "locales=en_US.UTF-8,zh_CN.UTF-8",
-            "keyboard-layouts=us",
-            "utc=yes",
-            "console=tty0",
-            "console=ttyS0,115200n8",
-        )
+    parameters = (
+        "boot=live",
+        "components",
+        f'username={identity["live_user"]}',
+        f'hostname={identity["hostname_prefix"]}-live',
+        "locales=en_US.UTF-8,zh_CN.UTF-8",
+        "keyboard-layouts=us",
+        "utc=yes",
+        "console=tty0",
+        "console=ttyS0,115200n8",
     )
+    if graphical:
+        parameters += (
+            "quiet",
+            "splash",
+            "loglevel=3",
+            "systemd.show_status=auto",
+            "udev.log_level=3",
+            "plymouth.ignore-serial-consoles",
+            "vt.global_cursor_default=0",
+        )
+    return " ".join(parameters)
 
 
 def grub_config(product: dict) -> str:
@@ -142,10 +151,15 @@ def grub_config(product: dict) -> str:
     return "\n".join(
         (
             "set default=0",
-            "set timeout=5",
+            "set timeout=3",
             "",
             f'menuentry "{title} Live" {{',
             f"    linux /live/vmlinuz {live_boot_parameters(product)}",
+            "    initrd /live/initrd.img",
+            "}",
+            "",
+            f'menuentry "{title} Live (diagnostics)" {{',
+            f"    linux /live/vmlinuz {live_boot_parameters(product, False)}",
             "    initrd /live/initrd.img",
             "}",
             "",

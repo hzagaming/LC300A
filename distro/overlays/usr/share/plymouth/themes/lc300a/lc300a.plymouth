@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=LC300A Flow
+Description=LC300A branded graphical boot experience
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/lc300a
+ScriptFile=/usr/share/plymouth/themes/lc300a/lc300a.script

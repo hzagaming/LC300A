@@ -18,7 +18,7 @@ distro/package-lists + distro/overlays + distro/hooks
                   ├──> debootstrap / Debian trixie amd64 rootfs
                   ├──> Linux + systemd + Live 用户
                   ├──> Plasma + Wayland + SDDM + PipeWire
-                  ├──> Logo + 双主题壁纸 + 声音主题
+                  ├──> Plymouth + Logo + 双主题壁纸 + 声音主题
                   └──> 已清理的 chroot
                               │
                               ├──> mksquashfs
@@ -59,6 +59,8 @@ make test-desktop
 `make iso` 会生成 ISO、SHA-256、软件包清单、构建清单和完整 live-build 日志。重复构建前使用 `make clean CONFIRM=1`；该命令只清理 `build/` 中的生成项并保留受控目录。若 live-build 留下 root 所有权文件，清理命令会在明确确认后请求 sudo。
 
 ## 启动与测试边界
+
+默认 GRUB 入口使用 quiet/splash 启动 LC300A Plymouth 主题，同时保留串口控制台、启动标记和 `Live (diagnostics)` 完整日志入口。Plymouth 只负责视觉反馈，失败时不得阻断 systemd、SDDM 或 Plasma。
 
 阶段 1 验收使用 QEMU `q35`、成对 OVMF CODE/VARS pflash 和串口日志验证 UEFI 启动，并在 Live 用户、home、shell 与 sudo 组就绪后输出 `LC300A_BOOT_OK`。阶段 2 验收等待 SDDM 自动登录、KWin Wayland、PlasmaShell D-Bus、PipeWire、WirePlumber 与 Wayland socket 就绪，所有谓词均失败关闭；输出 `LC300A_DESKTOP_OK` 后在有限时间内抓取并验证真实帧缓冲，拒绝纯色、低亮度及大面积黑屏。TCG 使用 `qemu64`，KVM 使用 `host` CPU。
 
