@@ -48,8 +48,11 @@ def validate_packages() -> None:
         "konsole",
         "kwin-wayland",
         "network-manager",
+        "packagekit",
         "pipewire-pulse",
         "plasma-desktop",
+        "plasma-discover",
+        "plasma-discover-backend-flatpak",
         "plasma-nm",
         "plasma-pa",
         "plasma-workspace",
@@ -123,6 +126,32 @@ def validate_plasma() -> None:
     for relative in required_assets:
         if not (OVERLAY / relative).is_file():
             raise ValueError(f"缺少桌面品牌资产: {relative}")
+
+    favorites = read_config("etc/xdg/kicker-extra-favoritesrc")["General"]
+    expected = [
+        "firefox-esr.desktop",
+        "org.kde.discover.desktop",
+        "org.kde.dolphin.desktop",
+        "org.kde.konsole.desktop",
+    ]
+    if favorites.get("prepend", "").split(";") != expected:
+        raise ValueError("应用菜单未固定浏览器、应用商店、文件管理器和终端")
+    if favorites.getboolean("ignoredefaults", fallback=True):
+        raise ValueError("应用菜单不应隐藏 Plasma 默认收藏")
+
+    power = read_config("etc/xdg/powerdevilrc")
+    for profile in ("AC", "Battery", "LowBattery"):
+        settings = power[profile]
+        if settings.getboolean("dimdisplaywhenidle", fallback=True):
+            raise ValueError(f"{profile} Live 会话仍会自动调暗显示器")
+        if settings.getboolean("turnoffdisplaywhenidle", fallback=True):
+            raise ValueError(f"{profile} Live 会话仍会自动关闭显示器")
+        if settings.getboolean("lockbeforeturnoffdisplay", fallback=True):
+            raise ValueError(f"{profile} Live 会话仍会在关闭显示器前锁屏")
+
+    locker = read_config("etc/xdg/kscreenlockerrc")["Daemon"]
+    if locker.getboolean("autolock", fallback=True) or locker.getint("timeout", fallback=-1) != 0:
+        raise ValueError("Live 会话仍会自动锁屏")
 
 
 def validate_color_scheme() -> None:
@@ -214,6 +243,8 @@ def validate_readiness() -> None:
         "wireplumber",
         "/sys/class/drm",
         "LC300A_DESKTOP_OK",
+        "packagekit-backend.so",
+        "plasma-discover",
     ):
         if value not in probe:
             raise ValueError(f"桌面就绪探针缺少: {value}")
@@ -241,7 +272,8 @@ def validate_readiness() -> None:
         "LC300A_DESKTOP_OK",
         "screendump",
         "validate_framebuffer.py",
-        "FRAMEBUFFER_TIMEOUT_SECONDS",
+        "FRAMEBUFFER_TIMEOUT_SECONDS:-120",
+        "FRAMEBUFFER_STABILITY_SECONDS",
         "local cpu=qemu64",
         "-vga virtio",
     ):

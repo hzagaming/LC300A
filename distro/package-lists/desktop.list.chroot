@@ -17,6 +17,7 @@ kwin-wayland
 libgl1-mesa-dri
 libspa-0.2-bluetooth
 mesa-vulkan-drivers
+packagekit
 pipewire
 pipewire-alsa
 pipewire-audio

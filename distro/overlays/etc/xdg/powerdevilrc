@@ -1,0 +1,14 @@
+[AC]
+DimDisplayWhenIdle=false
+LockBeforeTurnOffDisplay=false
+TurnOffDisplayWhenIdle=false
+
+[Battery]
+DimDisplayWhenIdle=false
+LockBeforeTurnOffDisplay=false
+TurnOffDisplayWhenIdle=false
+
+[LowBattery]
+DimDisplayWhenIdle=false
+LockBeforeTurnOffDisplay=false
+TurnOffDisplayWhenIdle=false

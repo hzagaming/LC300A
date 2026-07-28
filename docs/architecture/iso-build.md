@@ -60,7 +60,7 @@ make test-desktop
 
 ## 启动与测试边界
 
-默认 GRUB 入口使用 quiet/splash 启动 LC300A Plymouth 主题，同时保留串口控制台、启动标记和 `Live (diagnostics)` 完整日志入口。Plymouth 只负责视觉反馈，失败时不得阻断 systemd、SDDM 或 Plasma。
+GRUB 的默认图形入口使用 `systemd.unit=graphical.target` 和 quiet/splash 启动 LC300A Plymouth 主题；纯文字入口使用 `systemd.unit=multi-user.target`，显示完整日志且不启动 SDDM/Plasma。两种模式都保留串口控制台和启动标记。Plymouth 只负责视觉反馈，失败时不得阻断 systemd、SDDM 或 Plasma。
 
 阶段 1 验收使用 QEMU `q35`、成对 OVMF CODE/VARS pflash 和串口日志验证 UEFI 启动，并在 Live 用户、home、shell 与 sudo 组就绪后输出 `LC300A_BOOT_OK`。阶段 2 验收等待 SDDM 自动登录、KWin Wayland、PlasmaShell D-Bus、PipeWire、WirePlumber 与 Wayland socket 就绪，所有谓词均失败关闭；输出 `LC300A_DESKTOP_OK` 后在有限时间内抓取并验证真实帧缓冲，拒绝纯色、低亮度及大面积黑屏。TCG 使用 `qemu64`，KVM 使用 `host` CPU。
 

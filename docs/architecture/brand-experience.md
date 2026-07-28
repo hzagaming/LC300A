@@ -17,4 +17,5 @@
 - 背景音乐只提供可选预览，默认关闭且禁止自动播放。
 - 声音由仓库内脚本确定性生成，不使用来源不明的采样或音乐片段。
 - 视觉资产已安装到 Plymouth、Plasma 与 SDDM，事件音已安装为 freedesktop 声音主题；BGM 预览不加入自动启动项。
+- 应用菜单通过系统级 XDG 配置收藏 Firefox、Discover、Dolphin 与 Konsole，不保存或复制 Live 用户的 Plasma 运行时状态。
 - 系统默认记录当前 Plasma Welcome Center 版本，避免首次会话被上游窗口遮挡；应用仍可手动启动。

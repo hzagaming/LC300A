@@ -4,6 +4,14 @@ set -eu
 
 config=/etc/live/config.conf.d/lc300a.conf
 marker=LC300A_BOOT_OK
+console_marker=LC300A_CONSOLE_OK
+
+write_marker() {
+  printf '%s\n' "$1"
+  if [ -w /dev/ttyS0 ]; then
+    printf '%s\n' "$1" >/dev/ttyS0
+  fi
+}
 
 # shellcheck source=/dev/null
 . "$config"
@@ -16,7 +24,7 @@ case $user_shell in
 esac
 id -nG "$LIVE_USERNAME" | tr ' ' '\n' | grep -qx sudo
 
-printf '%s\n' "$marker"
-if [ -w /dev/ttyS0 ]; then
-  printf '%s\n' "$marker" >/dev/ttyS0
+write_marker "$marker"
+if grep -Fqw 'systemd.unit=multi-user.target' /proc/cmdline; then
+  write_marker "$console_marker"
 fi

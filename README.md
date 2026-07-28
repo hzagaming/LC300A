@@ -35,10 +35,11 @@ make bootstrap
 make doctor-strict
 make iso
 make test-boot
+make test-console
 make test-desktop
 ```
 
-当前开发镜像为 2,684,534,784 字节、1,581 个包，SHA-256：`bd17e483d869a5875272c5f2a08df81c75be0129c511c4a223e3769dc1b9909b`。
+当前开发镜像为 2,684,538,880 字节、1,581 个包，SHA-256：`8713c42cd56a15fc2d6262417e639c3130f1d2c89d34f7021af70eeb2ce37e4e`。
 
 ### 启动系统
 
@@ -48,12 +49,17 @@ make test-desktop
 make run-uefi
 ```
 
-GRUB 默认在 3 秒后进入带 LC300A 图形启动界面的 `落川OS 300型 Live`。如果画面停住或需要排错，在 GRUB 中按方向键选择 `Live (diagnostics)`，再按 Enter 查看完整启动日志。
+GRUB 默认在 3 秒后进入 `Live (图形桌面)`，显示 LC300A 启动画面并自动进入 Plasma。需要完整日志、低资源运行或排错时，选择 `Live (纯文字模式)`，该模式只启动 multi-user 文本控制台，不启动 SDDM 和 Plasma。
+
+纯文字模式使用 Live 账户 `lc300a-live`，密码为 `live`；图形模式由 SDDM 自动登录，注销后会回到图形登录页。
+
+图形桌面的应用菜单默认收藏 Firefox ESR、Discover 应用商店、Dolphin 文件管理器和 Konsole 终端。Discover 已连接 Debian PackageKit 与 Flatpak 后端；Flatpak 软件源仍由用户按需添加。
 
 只做自动验收时：
 
 ```bash
 make test-boot
+make test-console
 make test-desktop
 ```
 

@@ -13,6 +13,7 @@ readonly MONITOR_SOCKET="$PROJECT_ROOT/build/artifacts/qemu-monitor.sock"
 readonly DESKTOP_SCREENSHOT="$PROJECT_ROOT/build/artifacts/desktop.ppm"
 readonly FRAMEBUFFER_VALIDATION_LOG="$PROJECT_ROOT/build/artifacts/framebuffer-validation.log"
 readonly BOOT_MARKER=LC300A_BOOT_OK
+readonly CONSOLE_MARKER=LC300A_CONSOLE_OK
 readonly DESKTOP_MARKER=LC300A_DESKTOP_OK
 QEMU_PID=
 
@@ -127,6 +128,71 @@ test_boot() {
   return 1
 }
 
+select_console_entry() {
+  python3 - "$MONITOR_SOCKET" <<'PY'
+import socket
+import sys
+import time
+
+with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+    connection.settimeout(10)
+    connection.connect(sys.argv[1])
+    connection.recv(4096)
+    for key in ("down", "ret"):
+        connection.sendall(f"sendkey {key}\n".encode("utf-8"))
+        time.sleep(0.5)
+PY
+}
+
+test_console() {
+  local timeout_seconds=${CONSOLE_TIMEOUT_SECONDS:-180}
+  local elapsed=0
+  local selected=0
+
+  [[ $timeout_seconds =~ ^[0-9]+$ && $timeout_seconds -ge 30 && $timeout_seconds -le 600 ]] || {
+    printf '[ERROR] CONSOLE_TIMEOUT_SECONDS 必须在 30 到 600 之间\n' >&2
+    exit 2
+  }
+  require_inputs
+  rm -f -- "$MONITOR_SOCKET"
+  : >"$SERIAL_LOG"
+  qemu-system-x86_64 "${QEMU_ARGUMENTS[@]}" \
+    -display none \
+    -monitor "unix:$MONITOR_SOCKET,server=on,wait=off" \
+    -serial "file:$SERIAL_LOG" &
+  QEMU_PID=$!
+
+  cleanup() {
+    if [[ -n $QEMU_PID ]] && kill -0 "$QEMU_PID" >/dev/null 2>&1; then
+      kill "$QEMU_PID" >/dev/null 2>&1 || true
+      wait "$QEMU_PID" >/dev/null 2>&1 || true
+    fi
+    rm -f -- "$MONITOR_SOCKET"
+  }
+  trap cleanup EXIT INT TERM
+
+  while ((elapsed < timeout_seconds)); do
+    if ((selected == 0)) && grep -q '纯文字模式' "$SERIAL_LOG"; then
+      select_console_entry
+      selected=1
+    fi
+    if grep -q "$CONSOLE_MARKER" "$SERIAL_LOG"; then
+      printf '[OK] UEFI 纯文字模式通过，检测到 %s\n' "$CONSOLE_MARKER"
+      return 0
+    fi
+    if ! kill -0 "$QEMU_PID" >/dev/null 2>&1; then
+      printf '[ERROR] QEMU 在纯文字模式标记出现前退出\n' >&2
+      tail -n 120 "$SERIAL_LOG" >&2
+      return 1
+    fi
+    sleep 1
+    ((elapsed += 1))
+  done
+  printf '[ERROR] %s 秒内未检测到纯文字模式标记\n' "$timeout_seconds" >&2
+  tail -n 120 "$SERIAL_LOG" >&2
+  return 1
+}
+
 capture_framebuffer() {
   rm -f -- "$DESKTOP_SCREENSHOT"
   python3 - "$MONITOR_SOCKET" "$DESKTOP_SCREENSHOT" <<'PY'
@@ -156,7 +222,8 @@ PY
 
 test_desktop() {
   local timeout_seconds=${DESKTOP_TIMEOUT_SECONDS:-600}
-  local framebuffer_timeout=${FRAMEBUFFER_TIMEOUT_SECONDS:-60}
+  local framebuffer_timeout=${FRAMEBUFFER_TIMEOUT_SECONDS:-120}
+  local stability_seconds=${FRAMEBUFFER_STABILITY_SECONDS:-15}
   local elapsed=0
   local framebuffer_elapsed
 
@@ -166,6 +233,10 @@ test_desktop() {
   }
   [[ $framebuffer_timeout =~ ^[0-9]+$ && $framebuffer_timeout -ge 5 && $framebuffer_timeout -le 120 ]] || {
     printf '[ERROR] FRAMEBUFFER_TIMEOUT_SECONDS 必须在 5 到 120 之间\n' >&2
+    exit 2
+  }
+  [[ $stability_seconds =~ ^[0-9]+$ && $stability_seconds -ge 5 && $stability_seconds -le 60 ]] || {
+    printf '[ERROR] FRAMEBUFFER_STABILITY_SECONDS 必须在 5 到 60 之间\n' >&2
     exit 2
   }
   require_inputs
@@ -188,6 +259,7 @@ test_desktop() {
 
   while ((elapsed < timeout_seconds)); do
     if grep -q "$DESKTOP_MARKER" "$SERIAL_LOG"; then
+      sleep "$stability_seconds"
       framebuffer_elapsed=0
       while ((framebuffer_elapsed < framebuffer_timeout)); do
         if capture_framebuffer; then
@@ -222,9 +294,10 @@ test_desktop() {
 case ${1:-} in
   run) run_interactive ;;
   test) test_boot ;;
+  console) test_console ;;
   desktop) test_desktop ;;
   *)
-    printf '[ERROR] 用法: %s [run|test|desktop]\n' "$0" >&2
+    printf '[ERROR] 用法: %s [run|test|console|desktop]\n' "$0" >&2
     exit 2
     ;;
 esac

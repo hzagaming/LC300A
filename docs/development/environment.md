@@ -21,6 +21,7 @@ make lint
 make test
 make iso
 make test-boot
+make test-console
 ```
 
 `make bootstrap` 会在安装依赖前请求确认。CI 中如需非交互安装，必须显式设置 `LC300A_ASSUME_YES=1`。ISO、校验值、构建清单、包清单和串口日志写入 `build/artifacts/`。

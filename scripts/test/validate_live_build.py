@@ -61,6 +61,7 @@ def validate() -> None:
         "plymouth.ignore-serial-consoles",
         "quiet",
         "splash",
+        "systemd.unit=graphical.target",
         "systemd.show_status=auto",
         "username=lc300a-live",
     ):
@@ -126,6 +127,7 @@ def validate() -> None:
             "WantedBy=multi-user.target" not in service
             or "After=live-config.service" not in service
             or "LC300A_BOOT_OK" not in marker_script
+            or "LC300A_CONSOLE_OK" not in marker_script
             or 'id "$LIVE_USERNAME"' not in marker_script
             or "getty@tty1.service" in service
             or "getty@tty1.service" in marker_script
@@ -145,8 +147,14 @@ def validate() -> None:
                 raise ValueError(f"Plymouth initramfs 集成缺少: {value}")
 
         grub = (workspace / "lc300a-boot/grub.cfg").read_text(encoding="utf-8")
-        if 'menuentry "落川OS 300型 Live (diagnostics)"' not in grub:
-            raise ValueError("GRUB 缺少可恢复完整日志的诊断入口")
+        for value in (
+            'menuentry "落川OS 300型 Live (图形桌面)"',
+            'menuentry "落川OS 300型 Live (纯文字模式)"',
+            "systemd.unit=graphical.target",
+            "systemd.unit=multi-user.target",
+        ):
+            if value not in grub:
+                raise ValueError(f"GRUB 启动模式选择缺少: {value}")
 
     qemu_script = (PROJECT_ROOT / "scripts/test/qemu-boot.sh").read_text(encoding="utf-8")
     for value in (
@@ -156,13 +164,19 @@ def validate() -> None:
         "edk2-i386-vars.fd",
         "if=pflash",
         "LC300A_BOOT_OK",
+        "LC300A_CONSOLE_OK",
         "LC300A_ISO_PATH",
+        "CONSOLE_TIMEOUT_SECONDS",
+        'for key in ("down", "ret")',
         "QEMU_PID=",
     ):
         if value not in qemu_script:
             raise ValueError(f"QEMU UEFI 测试缺少契约: {value}")
     if "local qemu_pid" in qemu_script:
         raise ValueError("QEMU 清理 trap 不应引用已离开作用域的局部 PID")
+    makefile = (PROJECT_ROOT / "Makefile").read_text(encoding="utf-8")
+    if "test-console:" not in makefile or "qemu-boot.sh console" not in makefile:
+        raise ValueError("Makefile 缺少纯文字模式验收入口")
     build_script = (PROJECT_ROOT / "scripts/build/live_build.sh").read_text(encoding="utf-8")
     for value in (
         "grub-mkrescue",

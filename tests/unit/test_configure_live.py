@@ -32,6 +32,7 @@ class ConfigureLiveTest(unittest.TestCase):
             "quiet",
             "splash",
             "plymouth.ignore-serial-consoles",
+            "systemd.unit=graphical.target",
             "systemd.show_status=auto",
         ):
             self.assertIn(parameter, boot_parameters)
@@ -54,10 +55,15 @@ class ConfigureLiveTest(unittest.TestCase):
         self.assertIn("initrd /live/initrd.img", config)
         self.assertIn("username=lc300a-live", config)
         self.assertIn("console=ttyS0,115200n8", config)
-        self.assertIn('menuentry "落川OS 300型 Live (diagnostics)"', config)
-        diagnostic = config.split('menuentry "落川OS 300型 Live (diagnostics)"', 1)[1]
-        self.assertNotIn(" quiet ", diagnostic)
-        self.assertNotIn(" splash ", diagnostic)
+        self.assertIn('menuentry "落川OS 300型 Live (图形桌面)"', config)
+        self.assertIn('menuentry "落川OS 300型 Live (纯文字模式)"', config)
+        graphical, console = config.split('menuentry "落川OS 300型 Live (纯文字模式)"', 1)
+        self.assertIn("systemd.unit=graphical.target", graphical)
+        self.assertIn(" quiet ", graphical)
+        self.assertIn(" splash ", graphical)
+        self.assertIn("systemd.unit=multi-user.target", console)
+        self.assertNotIn(" quiet ", console)
+        self.assertNotIn(" splash ", console)
 
     def test_rejects_wrong_base(self):
         product = copy.deepcopy(self.product)
@@ -96,6 +102,9 @@ class ConfigureLiveTest(unittest.TestCase):
             overlay = workspace / "config/includes.chroot"
             for relative in (
                 "etc/plymouth/plymouthd.conf",
+                "etc/xdg/kscreenlockerrc",
+                "etc/xdg/kicker-extra-favoritesrc",
+                "etc/xdg/powerdevilrc",
                 "usr/share/pixmaps/lc300a-mark.svg",
                 "usr/share/plymouth/themes/lc300a/lc300a-mark.png",
                 "usr/share/plymouth/themes/lc300a/lc300a.plymouth",

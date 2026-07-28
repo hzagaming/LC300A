@@ -18,6 +18,13 @@ drm_output_enabled() {
   return 1
 }
 
+discover_backend_ready() {
+  for backend in /usr/lib/*/qt6/plugins/discover/packagekit-backend.so; do
+    [ -r "$backend" ] && return 0
+  done
+  return 1
+}
+
 ready() {
   systemctl --quiet is-active display-manager.service || return 1
   systemctl --quiet is-active NetworkManager.service || return 1
@@ -36,6 +43,8 @@ ready() {
   command -v dolphin >/dev/null || return 1
   command -v firefox-esr >/dev/null || return 1
   command -v konsole >/dev/null || return 1
+  command -v plasma-discover >/dev/null || return 1
+  discover_backend_ready || return 1
 }
 
 attempt=0

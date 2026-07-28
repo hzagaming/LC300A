@@ -135,6 +135,7 @@ def live_boot_parameters(product: dict, graphical: bool = True) -> str:
     )
     if graphical:
         parameters += (
+            "systemd.unit=graphical.target",
             "quiet",
             "splash",
             "loglevel=3",
@@ -143,6 +144,8 @@ def live_boot_parameters(product: dict, graphical: bool = True) -> str:
             "plymouth.ignore-serial-consoles",
             "vt.global_cursor_default=0",
         )
+    else:
+        parameters += ("systemd.unit=multi-user.target",)
     return " ".join(parameters)
 
 
@@ -153,12 +156,12 @@ def grub_config(product: dict) -> str:
             "set default=0",
             "set timeout=3",
             "",
-            f'menuentry "{title} Live" {{',
+            f'menuentry "{title} Live (图形桌面)" {{',
             f"    linux /live/vmlinuz {live_boot_parameters(product)}",
             "    initrd /live/initrd.img",
             "}",
             "",
-            f'menuentry "{title} Live (diagnostics)" {{',
+            f'menuentry "{title} Live (纯文字模式)" {{',
             f"    linux /live/vmlinuz {live_boot_parameters(product, False)}",
             "    initrd /live/initrd.img",
             "}",

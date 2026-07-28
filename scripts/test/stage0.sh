@@ -97,6 +97,7 @@ grep -q 'eol: lf$' <<<"$eol_attribute" || {
 help_output=$(make --no-print-directory help)
 grep -q 'make doctor' <<<"$help_output"
 grep -q 'make iso' <<<"$help_output"
+grep -q 'make test-console' <<<"$help_output"
 
 if make --no-print-directory clean >/dev/null 2>&1; then
   printf '[ERROR] 未确认时不应允许清理构建目录\n' >&2
@@ -104,6 +105,10 @@ if make --no-print-directory clean >/dev/null 2>&1; then
 fi
 if BOOT_TIMEOUT_SECONDS=1 ./scripts/test/qemu-boot.sh test >/dev/null 2>&1; then
   printf '[ERROR] 启动测试接受了不安全的超时值\n' >&2
+  exit 1
+fi
+if CONSOLE_TIMEOUT_SECONDS=1 ./scripts/test/qemu-boot.sh console >/dev/null 2>&1; then
+  printf '[ERROR] 纯文字模式测试接受了不安全的超时值\n' >&2
   exit 1
 fi
 
