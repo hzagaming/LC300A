@@ -105,6 +105,7 @@ class ConfigureLiveTest(unittest.TestCase):
                 "etc/xdg/kscreenlockerrc",
                 "etc/xdg/kicker-extra-favoritesrc",
                 "etc/xdg/powerdevilrc",
+                "usr/local/bin/plasma-discover",
                 "usr/share/pixmaps/lc300a-mark.svg",
                 "usr/share/plymouth/themes/lc300a/lc300a-mark.png",
                 "usr/share/plymouth/themes/lc300a/lc300a.plymouth",

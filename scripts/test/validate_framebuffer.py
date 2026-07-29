@@ -37,16 +37,63 @@ def validate(path: Path, minimum_width: int = 800, minimum_height: int = 600) ->
         raise ValueError("桌面截图平均亮度过低")
 
 
+def change_ratio(reference: Path, candidate: Path) -> float:
+    width, height, reference_pixels = ppm(reference)
+    candidate_width, candidate_height, candidate_pixels = ppm(candidate)
+    if (candidate_width, candidate_height) != (width, height):
+        raise ValueError("应用截图与桌面基准尺寸不一致")
+    pixel_count = width * height
+    step = max(1, pixel_count // 4096)
+    changed = 0
+    samples = 0
+    for index in range(0, pixel_count, step):
+        offset = index * 3
+        reference_pixel = reference_pixels[offset : offset + 3]
+        candidate_pixel = candidate_pixels[offset : offset + 3]
+        changed += max(abs(left - right) for left, right in zip(reference_pixel, candidate_pixel)) >= 16
+        samples += 1
+    return changed / samples
+
+
+def validate_transition(reference: Path, candidate: Path, minimum_change_ratio: float = 0.05) -> None:
+    if not 0 < minimum_change_ratio <= 1:
+        raise ValueError("截图变化比例必须在 0 到 1 之间")
+    ratio = change_ratio(reference, candidate)
+    if ratio < minimum_change_ratio:
+        raise ValueError(f"应用启动后仅改变 {ratio:.1%} 的帧缓冲")
+
+
+def validate_restoration(reference: Path, candidate: Path, maximum_change_ratio: float = 0.02) -> None:
+    if not 0 <= maximum_change_ratio < 1:
+        raise ValueError("桌面恢复变化比例必须在 0 到 1 之间")
+    ratio = change_ratio(reference, candidate)
+    if ratio > maximum_change_ratio:
+        raise ValueError(f"应用关闭后仍有 {ratio:.1%} 的帧缓冲未恢复")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate a QEMU desktop framebuffer")
     parser.add_argument("screenshot", type=Path)
+    parser.add_argument("--reference", type=Path)
+    parser.add_argument("--minimum-change-ratio", type=float, default=0.05)
+    parser.add_argument("--maximum-change-ratio", type=float)
     arguments = parser.parse_args()
     try:
         validate(arguments.screenshot)
+        if arguments.reference:
+            if arguments.maximum_change_ratio is None:
+                validate_transition(arguments.reference, arguments.screenshot, arguments.minimum_change_ratio)
+            else:
+                validate_restoration(arguments.reference, arguments.screenshot, arguments.maximum_change_ratio)
     except (OSError, ValueError) as error:
         print(f"[ERROR] 桌面截图校验失败: {error}", file=sys.stderr)
         return 1
-    print(f"[OK] 桌面截图包含有效且非纯色的图形内容: {arguments.screenshot}")
+    if arguments.maximum_change_ratio is not None:
+        print(f"[OK] 应用关闭后桌面已恢复: {arguments.screenshot}")
+    elif arguments.reference:
+        print(f"[OK] 应用窗口已显著改变真实帧缓冲: {arguments.screenshot}")
+    else:
+        print(f"[OK] 桌面截图包含有效且非纯色的图形内容: {arguments.screenshot}")
     return 0
 
 

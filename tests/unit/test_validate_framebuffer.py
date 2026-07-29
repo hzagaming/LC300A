@@ -45,6 +45,34 @@ class ValidateFramebufferTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 VALIDATOR.validate(path, 64, 48)
 
+    def test_accepts_meaningful_framebuffer_transition(self):
+        with tempfile.TemporaryDirectory() as directory:
+            reference = self.write_ppm(directory, 64, 48, bytes((32, 64, 96)) * 64 * 48)
+            candidate = Path(directory) / "candidate.ppm"
+            candidate.write_bytes(
+                b"P6\n64 48\n255\n"
+                + bytes((32, 64, 96)) * 32 * 48
+                + bytes((220, 220, 220)) * 32 * 48
+            )
+            VALIDATOR.validate_transition(reference, candidate, 0.1)
+
+    def test_rejects_unchanged_framebuffer_transition(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pixels = bytes((32, 64, 96)) * 64 * 48
+            reference = self.write_ppm(directory, 64, 48, pixels)
+            candidate = Path(directory) / "candidate.ppm"
+            candidate.write_bytes(b"P6\n64 48\n255\n" + pixels)
+            with self.assertRaises(ValueError):
+                VALIDATOR.validate_transition(reference, candidate, 0.1)
+
+    def test_rejects_framebuffer_that_did_not_restore(self):
+        with tempfile.TemporaryDirectory() as directory:
+            reference = self.write_ppm(directory, 64, 48, bytes((32, 64, 96)) * 64 * 48)
+            candidate = Path(directory) / "candidate.ppm"
+            candidate.write_bytes(b"P6\n64 48\n255\n" + bytes((220, 220, 220)) * 64 * 48)
+            with self.assertRaises(ValueError):
+                VALIDATOR.validate_restoration(reference, candidate, 0.02)
+
 
 if __name__ == "__main__":
     unittest.main()

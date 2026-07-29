@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor doctor-strict bootstrap brand-assets rootfs iso run run-uefi test test-boot test-console test-desktop test-installer lint clean release
+.PHONY: help doctor doctor-strict bootstrap brand-assets rootfs iso run run-uefi test test-boot test-console test-desktop test-apps test-installer lint clean release
 
 help: ## 显示命令说明
 	@printf '%s\n' \
@@ -20,6 +20,7 @@ help: ## 显示命令说明
 	  '  make test-boot       运行 UEFI 串口启动测试' \
 	  '  make test-console    验证纯文字启动模式' \
 	  '  make test-desktop    阶段 2：桌面测试' \
+	  '  make test-apps       阶段 2：图形应用交互测试' \
 	  '  make test-installer  阶段 3：安装器测试' \
 	  '  make clean CONFIRM=1 清理 build/ 中的生成文件' \
 	  '  make release         阶段 7：生成发布材料'
@@ -59,6 +60,9 @@ test-console:
 
 test-desktop:
 	@./scripts/test/qemu-boot.sh desktop
+
+test-apps:
+	@./scripts/test/qemu-boot.sh apps
 
 test-installer release:
 	@./scripts/build/stage-gate.sh "$@"

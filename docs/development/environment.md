@@ -22,9 +22,13 @@ make test
 make iso
 make test-boot
 make test-console
+make test-desktop
+make test-apps
 ```
 
 `make bootstrap` 会在安装依赖前请求确认。CI 中如需非交互安装，必须显式设置 `LC300A_ASSUME_YES=1`。ISO、校验值、构建清单、包清单和串口日志写入 `build/artifacts/`。
+
+`make test-apps` 使用 QEMU 双向串口驱动 Plasma 用户会话，并生成应用帧缓冲截图与音频捕获；测试期间需要访问 `https://example.com`。
 
 ## macOS Apple Silicon
 

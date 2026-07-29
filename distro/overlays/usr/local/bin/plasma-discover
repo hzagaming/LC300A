@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+for argument in "$@"; do
+  case $argument in
+    --listbackends|--backends|--backends=*) exec /usr/bin/plasma-discover "$@" ;;
+  esac
+done
+
+exec /usr/bin/plasma-discover --backends packagekit-backend,flatpak-backend "$@"

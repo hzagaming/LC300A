@@ -42,6 +42,7 @@ done
 
 for path in \
   distro/hooks/010-system-defaults.hook.chroot \
+  distro/overlays/usr/local/bin/plasma-discover \
   distro/overlays/usr/libexec/lc300a/boot-ready \
   scripts/build/live_build.sh \
   scripts/test/qemu-boot.sh; do
@@ -98,6 +99,7 @@ help_output=$(make --no-print-directory help)
 grep -q 'make doctor' <<<"$help_output"
 grep -q 'make iso' <<<"$help_output"
 grep -q 'make test-console' <<<"$help_output"
+grep -q 'make test-apps' <<<"$help_output"
 
 if make --no-print-directory clean >/dev/null 2>&1; then
   printf '[ERROR] 未确认时不应允许清理构建目录\n' >&2
@@ -109,6 +111,14 @@ if BOOT_TIMEOUT_SECONDS=1 ./scripts/test/qemu-boot.sh test >/dev/null 2>&1; then
 fi
 if CONSOLE_TIMEOUT_SECONDS=1 ./scripts/test/qemu-boot.sh console >/dev/null 2>&1; then
   printf '[ERROR] 纯文字模式测试接受了不安全的超时值\n' >&2
+  exit 1
+fi
+if APP_LAUNCH_TIMEOUT_SECONDS=1 ./scripts/test/qemu-boot.sh apps >/dev/null 2>&1; then
+  printf '[ERROR] 图形应用测试接受了不安全的超时值\n' >&2
+  exit 1
+fi
+if APP_SETTLE_SECONDS=1 ./scripts/test/qemu-boot.sh apps >/dev/null 2>&1; then
+  printf '[ERROR] 图形应用测试接受了过短的稳定等待时间\n' >&2
   exit 1
 fi
 

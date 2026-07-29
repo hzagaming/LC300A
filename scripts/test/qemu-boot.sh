@@ -10,12 +10,17 @@ readonly ISO_PATH="${LC300A_ISO_PATH:-$PROJECT_ROOT/build/artifacts/LC300A-x86_6
 readonly SERIAL_LOG="$PROJECT_ROOT/build/artifacts/boot-serial.log"
 readonly OVMF_VARS_COPY="$PROJECT_ROOT/build/artifacts/OVMF_VARS.fd"
 readonly MONITOR_SOCKET="$PROJECT_ROOT/build/artifacts/qemu-monitor.sock"
+readonly SERIAL_SOCKET="$PROJECT_ROOT/build/artifacts/qemu-serial.sock"
+readonly SERIAL_COMMAND_PIPE="$PROJECT_ROOT/build/artifacts/qemu-serial.commands"
 readonly DESKTOP_SCREENSHOT="$PROJECT_ROOT/build/artifacts/desktop.ppm"
+readonly AUDIO_OUTPUT="$PROJECT_ROOT/build/artifacts/apps-audio.wav"
 readonly FRAMEBUFFER_VALIDATION_LOG="$PROJECT_ROOT/build/artifacts/framebuffer-validation.log"
 readonly BOOT_MARKER=LC300A_BOOT_OK
 readonly CONSOLE_MARKER=LC300A_CONSOLE_OK
 readonly DESKTOP_MARKER=LC300A_DESKTOP_OK
 QEMU_PID=
+SERIAL_BRIDGE_PID=
+SERIAL_COMMAND_OPEN=0
 
 find_ovmf() {
   local code
@@ -194,8 +199,12 @@ test_console() {
 }
 
 capture_framebuffer() {
-  rm -f -- "$DESKTOP_SCREENSHOT"
-  python3 - "$MONITOR_SOCKET" "$DESKTOP_SCREENSHOT" <<'PY'
+  local screenshot=${1:-$DESKTOP_SCREENSHOT}
+  if (($#)); then
+    shift
+  fi
+  rm -f -- "$screenshot"
+  python3 - "$MONITOR_SOCKET" "$screenshot" <<'PY'
 import socket
 import sys
 import time
@@ -216,8 +225,143 @@ while time.monotonic() < deadline:
 else:
     raise SystemExit("QEMU 未生成桌面截图")
 PY
-  python3 "$PROJECT_ROOT/scripts/test/validate_framebuffer.py" "$DESKTOP_SCREENSHOT" \
+  python3 "$PROJECT_ROOT/scripts/test/validate_framebuffer.py" "$screenshot" "$@" \
     >"$FRAMEBUFFER_VALIDATION_LOG" 2>&1
+}
+
+send_monitor_key() {
+  python3 - "$MONITOR_SOCKET" "$1" <<'PY'
+import socket
+import sys
+import time
+
+with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+    connection.settimeout(10)
+    connection.connect(sys.argv[1])
+    connection.recv(4096)
+    connection.sendall(f"sendkey {sys.argv[2]}\n".encode("utf-8"))
+    time.sleep(0.5)
+PY
+}
+
+enter_firefox_url() {
+  python3 - "$MONITOR_SOCKET" <<'PY'
+import socket
+import sys
+import time
+
+mapping = {":": "shift-semicolon", "/": "slash", ".": "dot", "-": "minus"}
+with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+    connection.settimeout(10)
+    connection.connect(sys.argv[1])
+    connection.recv(4096)
+
+    def send(key, delay=0.2):
+        connection.sendall(f"sendkey {key}\n".encode("utf-8"))
+        time.sleep(delay)
+
+    send("ctrl-l", 0.5)
+    for character in "https://example.com":
+        send(mapping.get(character, character))
+    time.sleep(1)
+    send("ret", 2)
+    send("esc", 0.5)
+PY
+}
+
+quit_qemu() {
+  python3 - "$MONITOR_SOCKET" <<'PY'
+import socket
+import sys
+
+with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+    connection.settimeout(10)
+    connection.connect(sys.argv[1])
+    connection.recv(4096)
+    connection.sendall(b"quit\n")
+PY
+  wait "$QEMU_PID" >/dev/null 2>&1 || true
+  QEMU_PID=
+}
+
+start_serial_bridge() {
+  rm -f -- "$SERIAL_COMMAND_PIPE"
+  mkfifo "$SERIAL_COMMAND_PIPE"
+  exec 9<>"$SERIAL_COMMAND_PIPE"
+  SERIAL_COMMAND_OPEN=1
+  python3 "$PROJECT_ROOT/scripts/test/serial-console.py" \
+    "$SERIAL_SOCKET" "$SERIAL_LOG" "$SERIAL_COMMAND_PIPE" &
+  SERIAL_BRIDGE_PID=$!
+}
+
+stop_serial_bridge() {
+  if ((SERIAL_COMMAND_OPEN)); then
+    exec 9>&-
+    SERIAL_COMMAND_OPEN=0
+  fi
+  if [[ -n $SERIAL_BRIDGE_PID ]] && kill -0 "$SERIAL_BRIDGE_PID" >/dev/null 2>&1; then
+    kill "$SERIAL_BRIDGE_PID" >/dev/null 2>&1 || true
+    wait "$SERIAL_BRIDGE_PID" >/dev/null 2>&1 || true
+  fi
+  SERIAL_BRIDGE_PID=
+}
+
+send_serial_line() {
+  printf '%s\r' "$1" >&9
+}
+
+wait_for_serial() {
+  local marker=$1
+  local timeout_seconds=$2
+  local elapsed=0
+  while ((elapsed < timeout_seconds)); do
+    grep -Fq -- "$marker" "$SERIAL_LOG" && return 0
+    if ! kill -0 "$QEMU_PID" >/dev/null 2>&1; then
+      printf '[ERROR] QEMU 在等待串口内容时退出: %s\n' "$marker" >&2
+      return 1
+    fi
+    if [[ -n $SERIAL_BRIDGE_PID ]] && ! kill -0 "$SERIAL_BRIDGE_PID" >/dev/null 2>&1; then
+      printf '[ERROR] 串口桥在等待内容时退出: %s\n' "$marker" >&2
+      return 1
+    fi
+    sleep 1
+    ((elapsed += 1))
+  done
+  printf '[ERROR] %s 秒内未检测到串口内容: %s\n' "$timeout_seconds" "$marker" >&2
+  return 1
+}
+
+run_guest_command() {
+  local command=$1
+  local marker=$2
+  local timeout_seconds=$3
+  send_serial_line "$command; lc300a_status=\$?; printf '\\n$marker:%s\\n' \"\$lc300a_status\""
+  wait_for_serial "$marker:" "$timeout_seconds" || return 1
+  grep -Fq -- "$marker:0" "$SERIAL_LOG" || {
+    printf '[ERROR] 访客命令失败: %s\n' "$marker" >&2
+    return 1
+  }
+}
+
+wait_for_framebuffer() {
+  local screenshot=$1
+  local timeout_seconds=$2
+  local elapsed=0
+  shift 2
+  while ((elapsed < timeout_seconds)); do
+    if capture_framebuffer "$screenshot" "$@"; then
+      cat -- "$FRAMEBUFFER_VALIDATION_LOG"
+      return 0
+    fi
+    if ! kill -0 "$QEMU_PID" >/dev/null 2>&1; then
+      printf '[ERROR] QEMU 在图形验收完成前退出\n' >&2
+      return 1
+    fi
+    sleep 2
+    ((elapsed += 2))
+  done
+  cat -- "$FRAMEBUFFER_VALIDATION_LOG" >&2
+  return 1
 }
 
 test_desktop() {
@@ -291,13 +435,131 @@ test_desktop() {
   return 1
 }
 
+test_apps() {
+  local desktop_timeout=${DESKTOP_TIMEOUT_SECONDS:-600}
+  local launch_timeout=${APP_LAUNCH_TIMEOUT_SECONDS:-120}
+  local restore_timeout=${APP_RESTORE_TIMEOUT_SECONDS:-60}
+  local settle_seconds=${APP_SETTLE_SECONDS:-30}
+  local stability_seconds=${FRAMEBUFFER_STABILITY_SECONDS:-15}
+
+  [[ $desktop_timeout =~ ^[0-9]+$ && $desktop_timeout -ge 60 && $desktop_timeout -le 1200 ]] || {
+    printf '[ERROR] DESKTOP_TIMEOUT_SECONDS 必须在 60 到 1200 之间\n' >&2
+    exit 2
+  }
+  [[ $launch_timeout =~ ^[0-9]+$ && $launch_timeout -ge 10 && $launch_timeout -le 240 ]] || {
+    printf '[ERROR] APP_LAUNCH_TIMEOUT_SECONDS 必须在 10 到 240 之间\n' >&2
+    exit 2
+  }
+  [[ $restore_timeout =~ ^[0-9]+$ && $restore_timeout -ge 10 && $restore_timeout -le 120 ]] || {
+    printf '[ERROR] APP_RESTORE_TIMEOUT_SECONDS 必须在 10 到 120 之间\n' >&2
+    exit 2
+  }
+  [[ $settle_seconds =~ ^[0-9]+$ && $settle_seconds -ge 10 && $settle_seconds -le 120 ]] || {
+    printf '[ERROR] APP_SETTLE_SECONDS 必须在 10 到 120 之间\n' >&2
+    exit 2
+  }
+  [[ $stability_seconds =~ ^[0-9]+$ && $stability_seconds -ge 5 && $stability_seconds -le 60 ]] || {
+    printf '[ERROR] FRAMEBUFFER_STABILITY_SECONDS 必须在 5 到 60 之间\n' >&2
+    exit 2
+  }
+
+  require_inputs
+  rm -f -- "$MONITOR_SOCKET" "$SERIAL_SOCKET" "$SERIAL_COMMAND_PIPE" \
+    "$AUDIO_OUTPUT"
+  : >"$SERIAL_LOG"
+  qemu-system-x86_64 "${QEMU_ARGUMENTS[@]}" \
+    -display none \
+    -monitor "unix:$MONITOR_SOCKET,server=on,wait=off" \
+    -serial "unix:$SERIAL_SOCKET,server=on,wait=off" \
+    -audiodev "wav,id=audio0,path=$AUDIO_OUTPUT" \
+    -device ich9-intel-hda \
+    -device hda-output,audiodev=audio0 &
+  QEMU_PID=$!
+  start_serial_bridge
+
+  cleanup() {
+    stop_serial_bridge
+    if [[ -n $QEMU_PID ]] && kill -0 "$QEMU_PID" >/dev/null 2>&1; then
+      kill "$QEMU_PID" >/dev/null 2>&1 || true
+      wait "$QEMU_PID" >/dev/null 2>&1 || true
+    fi
+    rm -f -- "$MONITOR_SOCKET" "$SERIAL_SOCKET" "$SERIAL_COMMAND_PIPE"
+  }
+  trap cleanup EXIT INT TERM
+
+  wait_for_serial "$DESKTOP_MARKER" "$desktop_timeout" || {
+    tail -n 120 "$SERIAL_LOG" >&2
+    return 1
+  }
+  sleep "$stability_seconds"
+  send_serial_line ""
+  wait_for_serial "login:" 30 || return 1
+  send_serial_line "lc300a-live"
+  wait_for_serial "Password:" 30 || return 1
+  send_serial_line "live"
+  sleep 2
+  send_serial_line "stty -echo"
+  sleep 1
+  run_guest_command \
+    "export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus" \
+    LC300A_GUEST_SESSION 30 || return 1
+
+  test_application() {
+    local name=$1
+    local unit=$2
+    local command=$3
+    local baseline="$PROJECT_ROOT/build/artifacts/apps-$name-baseline.ppm"
+    local screenshot="$PROJECT_ROOT/build/artifacts/apps-$name.ppm"
+    local restored="$PROJECT_ROOT/build/artifacts/apps-$name-restored.ppm"
+    local firefox_page="$PROJECT_ROOT/build/artifacts/apps-firefox-page.ppm"
+
+    send_monitor_key shift
+    wait_for_framebuffer "$baseline" 30 || return 1
+    run_guest_command "$command" "LC300A_${name}_START" 30 || return 1
+    run_guest_command \
+      "for attempt in \$(seq 1 $launch_timeout); do systemctl --user is-active --quiet '$unit' && break; sleep 1; done; systemctl --user is-active --quiet '$unit'" \
+      "LC300A_${name}_ACTIVE" "$launch_timeout" || return 1
+    sleep "$settle_seconds"
+    send_monitor_key shift
+    wait_for_framebuffer "$screenshot" "$launch_timeout" \
+      --reference "$baseline" --minimum-change-ratio 0.15 || return 1
+    if [[ $name == firefox ]]; then
+      enter_firefox_url
+      wait_for_framebuffer "$firefox_page" "$launch_timeout" \
+        --reference "$screenshot" --minimum-change-ratio 0.01 || return 1
+    fi
+    run_guest_command \
+      "systemctl --user stop '$unit'; ! systemctl --user is-active --quiet '$unit'" \
+      "LC300A_${name}_STOP" 30 || return 1
+    wait_for_framebuffer "$restored" "$restore_timeout" \
+      --reference "$baseline" --maximum-change-ratio 0.05 || return 1
+    printf '[OK] 图形应用已保持运行并绘制窗口: %s\n' "$name"
+  }
+
+  test_application konsole lc300a-e2e-konsole.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-konsole --collect -- /usr/bin/konsole --nofork -e /bin/sh -c 'printf LC300A_TERMINAL_OK; exec sleep 300'" || return 1
+  test_application firefox lc300a-e2e-firefox.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-firefox --collect -- /usr/bin/firefox-esr --new-window https://example.com" || return 1
+  test_application discover lc300a-e2e-discover.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-discover --collect -- /usr/local/bin/plasma-discover" || return 1
+
+  run_guest_command \
+    "/usr/bin/pw-play --volume=0.45 /usr/share/sounds/luochuan-flow/stereo/desktop-login.wav" \
+    LC300A_AUDIO_PLAYBACK 60 || return 1
+  stop_serial_bridge
+  quit_qemu
+  python3 "$PROJECT_ROOT/scripts/test/validate_audio_output.py" "$AUDIO_OUTPUT" || return 1
+  printf '[OK] Konsole、Firefox、Discover 与音频图形交互测试通过\n'
+}
+
 case ${1:-} in
   run) run_interactive ;;
   test) test_boot ;;
   console) test_console ;;
   desktop) test_desktop ;;
+  apps) test_apps ;;
   *)
-    printf '[ERROR] 用法: %s [run|test|console|desktop]\n' "$0" >&2
+    printf '[ERROR] 用法: %s [run|test|console|desktop|apps]\n' "$0" >&2
     exit 2
     ;;
 esac

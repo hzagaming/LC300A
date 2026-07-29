@@ -267,6 +267,15 @@ def validate_readiness() -> None:
             raise ValueError(f"KWin 兼容启动器缺少: {value}")
     if "ExecStart=/usr/libexec/lc300a/start-kwin-wayland --xwayland" not in kwin_drop_in:
         raise ValueError("KWin 用户服务未使用兼容启动器")
+    discover = (OVERLAY / "usr/local/bin/plasma-discover").read_text(encoding="utf-8")
+    for value in (
+        "/usr/bin/plasma-discover",
+        "--listbackends",
+        "--backends|--backends=*",
+        "--backends packagekit-backend,flatpak-backend",
+    ):
+        if value not in discover:
+            raise ValueError(f"Discover 安全启动器缺少: {value}")
     qemu = (PROJECT_ROOT / "scripts/test/qemu-boot.sh").read_text(encoding="utf-8")
     for value in (
         "LC300A_DESKTOP_OK",
@@ -274,11 +283,36 @@ def validate_readiness() -> None:
         "validate_framebuffer.py",
         "FRAMEBUFFER_TIMEOUT_SECONDS:-120",
         "FRAMEBUFFER_STABILITY_SECONDS",
+        "APP_LAUNCH_TIMEOUT_SECONDS",
+        "APP_SETTLE_SECONDS:-30",
+        "serial-console.py",
+        "SERIAL_SOCKET",
+        "systemd-run --user",
+        "systemctl --user is-active",
+        "firefox-esr",
+        "plasma-discover",
+        "https://example.com",
+        "enter_firefox_url",
+        "apps-firefox-page.ppm",
+        "shift-semicolon",
+        "ich9-intel-hda",
+        "hda-output,audiodev=audio0",
+        "quit_qemu",
+        'connection.sendall(b"quit\\n")',
+        "validate_audio_output.py",
+        "--minimum-change-ratio 0.15",
+        "--minimum-change-ratio 0.01",
+        "--maximum-change-ratio 0.05",
         "local cpu=qemu64",
         "-vga virtio",
     ):
         if value not in qemu:
             raise ValueError(f"QEMU 桌面测试缺少: {value}")
+    serial_bridge = qemu.split("start_serial_bridge() {", 1)[1].split("\n}", 1)[0]
+    if 'rm -f -- "$SERIAL_SOCKET"' in serial_bridge:
+        raise ValueError("串口桥不得删除由 QEMU 持有的串口 socket")
+    if 'local restored="$PROJECT_ROOT/build/artifacts/apps-$name-restored.ppm"' not in qemu:
+        raise ValueError("图形应用测试缺少独立的桌面恢复截图")
     motd = (OVERLAY / "etc/motd").read_text(encoding="utf-8")
     if "阶段 1" in motd or "不代表完整桌面系统" in motd:
         raise ValueError("登录欢迎信息仍描述过时的阶段 1 控制台体验")

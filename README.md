@@ -2,7 +2,7 @@
 
 LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 Debian Stable、Linux LTS、KDE Plasma、Wayland 和 Calamares 为基础，目标是生成可通过 UEFI 启动、可试用、可安装并可更新的桌面操作系统。
 
-当前状态：**阶段 2 — 图形桌面（进行中）**。Plasma Wayland、SDDM、PipeWire、NetworkManager、基础桌面应用与品牌体验已接入 Live ISO，并通过 QEMU/OVMF 启动和真实帧缓冲 E2E；应用交互、实际网络与音频功能、安装器、原生 x86_64 发布验收及真实硬件兼容性仍待验证。
+当前状态：**阶段 2 — 图形桌面（完成）**。Plasma Wayland、SDDM、PipeWire、NetworkManager、基础桌面应用与品牌体验已接入 Live ISO，并通过 QEMU/OVMF 启动、真实帧缓冲、应用联网和非静音音频 E2E；安装器、原生 x86_64 发布验收及真实硬件兼容性仍待验证。
 
 ## 技术基线
 
@@ -37,9 +37,10 @@ make iso
 make test-boot
 make test-console
 make test-desktop
+make test-apps
 ```
 
-当前开发镜像为 2,684,538,880 字节、1,581 个包，SHA-256：`8713c42cd56a15fc2d6262417e639c3130f1d2c89d34f7021af70eeb2ce37e4e`。
+当前开发镜像为 1,788,637,184 字节、1,581 个包，SHA-256：`b1e3aac4dcd74fdcec00e25d74260fa273551f9b756f68519c59e6585fd01501`。
 
 ### 启动系统
 
@@ -53,7 +54,7 @@ GRUB 默认在 3 秒后进入 `Live (图形桌面)`，显示 LC300A 启动画面
 
 纯文字模式使用 Live 账户 `lc300a-live`，密码为 `live`；图形模式由 SDDM 自动登录，注销后会回到图形登录页。
 
-图形桌面的应用菜单默认收藏 Firefox ESR、Discover 应用商店、Dolphin 文件管理器和 Konsole 终端。Discover 已连接 Debian PackageKit 与 Flatpak 后端；Flatpak 软件源仍由用户按需添加。
+图形桌面的应用菜单默认收藏 Firefox ESR、Discover 应用商店、Dolphin 文件管理器和 Konsole 终端。Discover 默认只加载已验证稳定的 Debian PackageKit 与 Flatpak 后端；Flatpak 软件源仍由用户按需添加。
 
 只做自动验收时：
 
@@ -61,9 +62,12 @@ GRUB 默认在 3 秒后进入 `Live (图形桌面)`，显示 LC300A 启动画面
 make test-boot
 make test-console
 make test-desktop
+make test-apps
 ```
 
 `make doctor` 只诊断环境，不修改宿主机。`make bootstrap` 会明确请求确认后安装当前平台所需的开发依赖。
+
+`make test-apps` 会实际登录 Live 串口会话，在 Plasma 用户会话中打开 Konsole、Firefox 和 Discover，验证真实窗口、Firefox 外网页面以及 QEMU 捕获的非静音 PCM；该测试需要可访问 `https://example.com`。
 
 ISO 构建必须在 Debian/Ubuntu x86_64 环境完成。安装 Homebrew QEMU 后，macOS Apple Silicon 可运行已有 ISO 和执行 UEFI 模拟启动测试；发布验收仍以原生 x86_64 Linux 为准。详见 `docs/development/environment.md`。
 

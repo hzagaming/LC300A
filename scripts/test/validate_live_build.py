@@ -175,8 +175,9 @@ def validate() -> None:
     if "local qemu_pid" in qemu_script:
         raise ValueError("QEMU 清理 trap 不应引用已离开作用域的局部 PID")
     makefile = (PROJECT_ROOT / "Makefile").read_text(encoding="utf-8")
-    if "test-console:" not in makefile or "qemu-boot.sh console" not in makefile:
-        raise ValueError("Makefile 缺少纯文字模式验收入口")
+    for value in ("test-console:", "qemu-boot.sh console", "test-apps:", "qemu-boot.sh apps"):
+        if value not in makefile:
+            raise ValueError(f"Makefile 缺少验收入口: {value}")
     build_script = (PROJECT_ROOT / "scripts/build/live_build.sh").read_text(encoding="utf-8")
     for value in (
         "grub-mkrescue",

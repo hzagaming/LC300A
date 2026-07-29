@@ -14,6 +14,7 @@ chmod 0440 /etc/sudoers.d/010_lc300a-live
 chmod 0755 /usr/libexec/lc300a/boot-ready
 chmod 0755 /usr/libexec/lc300a/desktop-ready /usr/libexec/lc300a/session-sound \
   /usr/libexec/lc300a/start-kwin-wayland /usr/libexec/lc300a/start-plasmashell
+chmod 0755 /usr/local/bin/plasma-discover
 plymouth-set-default-theme lc300a
 update-initramfs -u
 systemctl enable NetworkManager.service
