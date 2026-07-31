@@ -25,3 +25,4 @@ plymouth-themes
 sudo
 systemd-sysv
 usbutils
+util-linux-extra

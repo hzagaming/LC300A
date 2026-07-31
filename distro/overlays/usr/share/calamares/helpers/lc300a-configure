@@ -1,0 +1,58 @@
+#!/bin/sh
+
+set -eu
+
+target=$(awk '$3 == "proc" && $2 ~ /calamares/ { sub(/\/proc$/, "", $2); print $2; exit }' /proc/mounts)
+[ -n "$target" ] && [ -d "$target/etc" ] || {
+    printf '%s\n' "LC300A target root was not found" >&2
+    exit 1
+}
+
+cat >"$target/etc/apt/sources.list" <<'EOF'
+deb http://deb.debian.org/debian trixie main contrib non-free-firmware
+deb http://deb.debian.org/debian trixie-updates main contrib non-free-firmware
+deb http://security.debian.org/debian-security trixie-security main contrib non-free-firmware
+EOF
+rm -f "$target/etc/apt/sources.list.d/"*.list
+
+if grep -q '^GRUB_CMDLINE_LINUX=' "$target/etc/default/grub"; then
+    sed -i 's|^GRUB_CMDLINE_LINUX=.*|GRUB_CMDLINE_LINUX="console=tty0 console=ttyS0,115200n8"|' \
+        "$target/etc/default/grub"
+else
+    printf '%s\n' 'GRUB_CMDLINE_LINUX="console=tty0 console=ttyS0,115200n8"' \
+        >>"$target/etc/default/grub"
+fi
+chroot "$target" update-grub
+
+cat >"$target/etc/motd" <<'EOF'
+LC300A（落川OS 300型）开发版本
+
+欢迎使用 LC300A。当前版本用于开发测试，请及时安装系统更新。
+EOF
+
+systemctl --root="$target" disable lc300a-boot-ready.service \
+    lc300a-desktop-ready.service >/dev/null 2>&1 || true
+rm -f \
+    "$target/etc/live/config.conf.d/lc300a.conf" \
+    "$target/etc/sddm.conf.d/lc300a.conf" \
+    "$target/etc/sudoers.d/010_lc300a-live" \
+    "$target/etc/systemd/system/sddm.service.d/live-user.conf" \
+    "$target/etc/systemd/journald.conf.d/volatile.conf" \
+    "$target/etc/xdg/autostart/calamares-desktop-icon.desktop" \
+    "$target/etc/xdg/autostart/lc300a-installer-launcher.desktop" \
+    "$target/etc/xdg/kscreenlockerrc" \
+    "$target/etc/xdg/powerdevilrc" \
+    "$target/usr/lib/systemd/system/lc300a-boot-ready.service" \
+    "$target/usr/lib/systemd/system/lc300a-desktop-ready.service" \
+    "$target/usr/libexec/lc300a/add-installer-launcher" \
+    "$target/usr/libexec/lc300a/boot-ready" \
+    "$target/usr/libexec/lc300a/desktop-ready" \
+    "$target/usr/local/bin/lc300a-installer" \
+    "$target/usr/share/applications/lc300a-installer.desktop"
+sed -i 's/lc300a-installer.desktop;//' \
+    "$target/etc/xdg/kicker-extra-favoritesrc"
+rm -rf "$target/etc/calamares" \
+    "$target/usr/lib/calamares/modules/lc300a-configure" \
+    "$target/usr/lib/calamares/modules/lc300a-finished" \
+    "$target/usr/share/calamares/helpers/lc300a-configure" \
+    "$target/usr/share/calamares/helpers/lc300a-finished"

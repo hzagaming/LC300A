@@ -38,6 +38,7 @@ python3 scripts/test/validate_product.py
 python3 scripts/test/validate_experience.py
 python3 scripts/test/validate_live_build.py
 python3 scripts/test/validate_desktop.py
+python3 scripts/test/validate_installer.py
 python3 scripts/test/repository_hygiene.py
 
 if command -v shellcheck >/dev/null 2>&1; then

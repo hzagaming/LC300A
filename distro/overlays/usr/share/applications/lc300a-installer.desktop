@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=安装落川OS 300型
+Name[en]=Install LC300A
+GenericName=系统安装器
+GenericName[en]=System Installer
+Comment=将落川OS安装到这台电脑
+Comment[en]=Install LC300A on this computer
+Exec=lc300a-installer
+Icon=lc300a-mark
+Terminal=false
+Categories=Qt;System;
+Keywords=install;installer;system;安装;系统;
+StartupWMClass=calamares
+StartupNotify=true

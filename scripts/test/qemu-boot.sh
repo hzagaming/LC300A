@@ -552,14 +552,16 @@ test_apps() {
   printf '[OK] Konsole、Firefox、Discover 与音频图形交互测试通过\n'
 }
 
-case ${1:-} in
-  run) run_interactive ;;
-  test) test_boot ;;
-  console) test_console ;;
-  desktop) test_desktop ;;
-  apps) test_apps ;;
-  *)
-    printf '[ERROR] 用法: %s [run|test|console|desktop|apps]\n' "$0" >&2
-    exit 2
-    ;;
-esac
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+  case ${1:-} in
+    run) run_interactive ;;
+    test) test_boot ;;
+    console) test_console ;;
+    desktop) test_desktop ;;
+    apps) test_apps ;;
+    *)
+      printf '[ERROR] 用法: %s [run|test|console|desktop|apps]\n' "$0" >&2
+      exit 2
+      ;;
+  esac
+fi

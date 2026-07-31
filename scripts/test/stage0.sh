@@ -63,6 +63,7 @@ python3 scripts/test/validate_product.py
 python3 scripts/test/validate_experience.py
 python3 scripts/test/validate_live_build.py
 python3 scripts/test/validate_desktop.py
+python3 scripts/test/validate_installer.py
 python3 scripts/build/generate_sounds.py --check
 python3 scripts/test/repository_hygiene.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/unit -p 'test_*.py'
@@ -105,6 +106,14 @@ if make --no-print-directory clean >/dev/null 2>&1; then
   printf '[ERROR] 未确认时不应允许清理构建目录\n' >&2
   exit 1
 fi
+if release_output=$(make --no-print-directory release 2>&1); then
+  printf '[ERROR] 阶段 3 不应开放发布命令\n' >&2
+  exit 1
+fi
+grep -q '当前阶段 3' <<<"$release_output" || {
+  printf '[ERROR] 发布门禁未报告当前阶段 3\n' >&2
+  exit 1
+}
 if BOOT_TIMEOUT_SECONDS=1 ./scripts/test/qemu-boot.sh test >/dev/null 2>&1; then
   printf '[ERROR] 启动测试接受了不安全的超时值\n' >&2
   exit 1
@@ -119,6 +128,14 @@ if APP_LAUNCH_TIMEOUT_SECONDS=1 ./scripts/test/qemu-boot.sh apps >/dev/null 2>&1
 fi
 if APP_SETTLE_SECONDS=1 ./scripts/test/qemu-boot.sh apps >/dev/null 2>&1; then
   printf '[ERROR] 图形应用测试接受了过短的稳定等待时间\n' >&2
+  exit 1
+fi
+if INSTALLER_TIMEOUT_SECONDS=1 ./scripts/test/qemu-installer.sh install >/dev/null 2>&1; then
+  printf '[ERROR] 安装器测试接受了不安全的安装超时值\n' >&2
+  exit 1
+fi
+if INSTALLED_BOOT_TIMEOUT_SECONDS=1 ./scripts/test/qemu-installer.sh install >/dev/null 2>&1; then
+  printf '[ERROR] 安装器测试接受了不安全的硬盘启动超时值\n' >&2
   exit 1
 fi
 

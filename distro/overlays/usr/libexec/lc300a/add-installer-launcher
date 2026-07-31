@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -eu
+
+[ -e /run/live/medium/live/filesystem.squashfs ] || exit 0
+desktop=${XDG_DESKTOP_DIR:-}
+if [ -z "$desktop" ] && command -v xdg-user-dir >/dev/null 2>&1; then
+    desktop=$(xdg-user-dir DESKTOP)
+fi
+[ -n "$desktop" ] || desktop="$HOME/Desktop"
+mkdir -p "$desktop"
+cp /usr/share/applications/lc300a-installer.desktop "$desktop/"
+chmod 0755 "$desktop/lc300a-installer.desktop"

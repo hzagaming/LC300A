@@ -1,0 +1,7 @@
+calamares
+calamares-settings-debian
+dosfstools
+efibootmgr
+grub-efi
+grub-efi-amd64
+x11-xserver-utils

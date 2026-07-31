@@ -1,0 +1,39 @@
+QWidget {
+    color: #172133;
+    font-family: "Noto Sans CJK SC", "Noto Sans", sans-serif;
+    font-size: 14px;
+}
+
+QPushButton {
+    min-height: 38px;
+    padding: 2px 14px;
+    border: 1px solid #8FA4BE;
+    border-radius: 6px;
+    background: #FFFFFF;
+}
+
+QPushButton:hover {
+    border-color: #315C9B;
+    background: #E8EFF8;
+}
+
+QPushButton:default {
+    color: #FFFFFF;
+    border-color: #315C9B;
+    background: #315C9B;
+}
+
+QPushButton:focus,
+QLineEdit:focus,
+QComboBox:focus {
+    border: 2px solid #0A5FB5;
+}
+
+QLineEdit,
+QComboBox {
+    min-height: 38px;
+    padding: 2px 8px;
+    border: 1px solid #8FA4BE;
+    border-radius: 5px;
+    background: #FFFFFF;
+}

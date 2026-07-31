@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -eu
+
+touch /run/lc300a-install-finished
+if [ -w /dev/ttyS0 ]; then
+    printf '%s\n' LC300A_INSTALL_OK >/dev/ttyS0
+fi

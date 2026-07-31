@@ -64,7 +64,10 @@ test-desktop:
 test-apps:
 	@./scripts/test/qemu-boot.sh apps
 
-test-installer release:
+test-installer:
+	@./scripts/test/qemu-installer.sh install
+
+release:
 	@./scripts/build/stage-gate.sh "$@"
 
 clean:

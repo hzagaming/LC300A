@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=添加落川OS安装入口
+Exec=/usr/libexec/lc300a/add-installer-launcher
+OnlyShowIn=KDE;
+StartupNotify=false
+X-KDE-autostart-phase=1

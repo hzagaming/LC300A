@@ -84,10 +84,19 @@ def validate_sddm() -> None:
 
     theme = read_config("usr/share/sddm/themes/breeze/theme.conf.user")
     general = theme["General"]
-    if general.get("background") != "/usr/share/wallpapers/LC300AFlow/contents/images/3840x2160.svg":
-        raise ValueError("SDDM 背景未使用 LC300A 壁纸")
+    if general.get("background") != "/usr/share/wallpapers/LC300AFlow/contents/images_dark/3840x2160.svg":
+        raise ValueError("SDDM 背景未使用 LC300A 深色壁纸")
     if general.get("logo") != "/usr/share/pixmaps/lc300a-mark.svg" or general.get("showlogo") != "shown":
         raise ValueError("SDDM Logo 配置错误")
+    foreground = general.get("color")
+    dark = product["colors"]["dark"]
+    minimum = tomllib.loads((BRANDING / "experience.toml").read_text(encoding="utf-8"))[
+        "accessibility"
+    ]["minimum_text_contrast"]
+    if foreground != dark["text"]:
+        raise ValueError("SDDM 前景色未使用深色主题文本色")
+    if EXPERIENCE_VALIDATOR.contrast_ratio(foreground, dark["background"]) < minimum:
+        raise ValueError("SDDM 登录文本对比度不足")
 
 
 def validate_plasma() -> None:
@@ -129,6 +138,7 @@ def validate_plasma() -> None:
 
     favorites = read_config("etc/xdg/kicker-extra-favoritesrc")["General"]
     expected = [
+        "lc300a-installer.desktop",
         "firefox-esr.desktop",
         "org.kde.discover.desktop",
         "org.kde.dolphin.desktop",

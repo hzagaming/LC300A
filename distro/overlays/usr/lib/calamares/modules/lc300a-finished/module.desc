@@ -1,0 +1,6 @@
+---
+type: "job"
+name: "lc300a-finished"
+interface: "process"
+command: "/usr/share/calamares/helpers/lc300a-finished"
+timeout: 30

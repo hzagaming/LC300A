@@ -1,6 +1,6 @@
 [General]
-background=/usr/share/wallpapers/LC300AFlow/contents/images/3840x2160.svg
-color=#315C9B
+background=/usr/share/wallpapers/LC300AFlow/contents/images_dark/3840x2160.svg
+color=#F4F7FB
 fontSize=10
 logo=/usr/share/pixmaps/lc300a-mark.svg
 needsFullUserModel=false

@@ -33,6 +33,7 @@ def validate() -> None:
         "plymouth-themes",
         "sudo",
         "systemd-sysv",
+        "util-linux-extra",
     }
     if not required.issubset(packages) or "openssh-server" in packages:
         raise ValueError("核心软件包清单缺少启动组件或意外启用 SSH 服务端")

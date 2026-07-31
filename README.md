@@ -2,7 +2,7 @@
 
 LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 Debian Stable、Linux LTS、KDE Plasma、Wayland 和 Calamares 为基础，目标是生成可通过 UEFI 启动、可试用、可安装并可更新的桌面操作系统。
 
-当前状态：**阶段 2 — 图形桌面（完成）**。Plasma Wayland、SDDM、PipeWire、NetworkManager、基础桌面应用与品牌体验已接入 Live ISO，并通过 QEMU/OVMF 启动、真实帧缓冲、应用联网和非静音音频 E2E；安装器、原生 x86_64 发布验收及真实硬件兼容性仍待验证。
+当前状态：**阶段 3 — 图形安装器（完成）**。Plasma Wayland、SDDM、PipeWire、NetworkManager、基础桌面应用、品牌体验与 Calamares 已接入 Live ISO，并通过 QEMU/OVMF 启动、真实帧缓冲、应用联网、非静音音频、完全断网安装及安装后硬盘启动 E2E；原生 x86_64 发布验收及真实硬件兼容性仍待验证。
 
 ## 技术基线
 
@@ -38,9 +38,10 @@ make test-boot
 make test-console
 make test-desktop
 make test-apps
+make test-installer
 ```
 
-当前开发镜像为 1,788,637,184 字节、1,581 个包，SHA-256：`b1e3aac4dcd74fdcec00e25d74260fa273551f9b756f68519c59e6585fd01501`。
+当前 `0.3.0-dev` 开发镜像为 1,820,854,272 字节、1,617 个包，SHA-256：`00d5d01326a856d0dae417578bb401cce73cbd860b5f367226465e026a1a8b79`。
 
 ### 启动系统
 
@@ -56,6 +57,8 @@ GRUB 默认在 3 秒后进入 `Live (图形桌面)`，显示 LC300A 启动画面
 
 图形桌面的应用菜单默认收藏 Firefox ESR、Discover 应用商店、Dolphin 文件管理器和 Konsole 终端。Discover 默认只加载已验证稳定的 Debian PackageKit 与 Flatpak 后端；Flatpak 软件源仍由用户按需添加。
 
+进入图形桌面后，可双击桌面上的“安装落川OS 300型”启动 Calamares。完整图形安装步骤与清盘风险说明见 `docs/installation/graphical-install.md`。
+
 只做自动验收时：
 
 ```bash
@@ -63,6 +66,7 @@ make test-boot
 make test-console
 make test-desktop
 make test-apps
+make test-installer
 ```
 
 `make doctor` 只诊断环境，不修改宿主机。`make bootstrap` 会明确请求确认后安装当前平台所需的开发依赖。
@@ -73,6 +77,7 @@ ISO 构建必须在 Debian/Ubuntu x86_64 环境完成。安装 Homebrew QEMU 后
 
 ## 项目文档
 
+- `ANNOUNCEMENT.md`：当前开发版本公告与镜像校验值
 - `ROADMAP.md`：开发阶段与验收门槛
 - `PROJECT_STATE.md`：当前真实进度和阻塞项
 - `DECISIONS.md`：架构决策记录

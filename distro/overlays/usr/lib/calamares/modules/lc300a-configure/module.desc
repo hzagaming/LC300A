@@ -1,0 +1,6 @@
+---
+type: "job"
+name: "lc300a-configure"
+interface: "process"
+command: "/usr/share/calamares/helpers/lc300a-configure"
+timeout: 600

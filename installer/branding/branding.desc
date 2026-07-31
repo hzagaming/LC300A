@@ -1,0 +1,36 @@
+---
+componentName: lc300a
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 1024px,680px
+windowPlacement: center
+
+strings:
+  productName: 落川OS 300型
+  shortProductName: 落川OS
+  version: 0.3.0-dev
+  shortVersion: 0.3.0
+  versionedName: 落川OS 300型 0.3.0-dev
+  shortVersionedName: 落川OS 0.3.0
+  bootloaderEntryName: LC300A
+  productUrl: https://github.com/charliezhong/LC300A
+  supportUrl: https://github.com/charliezhong/LC300A/issues
+  knownIssuesUrl: https://github.com/charliezhong/LC300A/issues
+
+sidebar: widget
+navigation: widget
+
+images:
+  productLogo: "lc300a-mark.svg"
+  productIcon: "lc300a-mark.svg"
+  productWelcome: "welcome.svg"
+
+slideshow: "show.qml"
+slideshowAPI: 2
+
+style:
+  SidebarBackground: "#172133"
+  SidebarText: "#F4F7FB"
+  SidebarTextCurrent: "#FFFFFF"
+  SidebarBackgroundCurrent: "#315C9B"

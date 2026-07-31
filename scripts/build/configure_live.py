@@ -14,6 +14,7 @@ EXPERIENCE_PATH = PROJECT_ROOT / "branding/experience.toml"
 PACKAGE_LISTS = PROJECT_ROOT / "distro/package-lists"
 OVERLAYS = PROJECT_ROOT / "distro/overlays"
 HOOKS = PROJECT_ROOT / "distro/hooks"
+INSTALLER = PROJECT_ROOT / "installer"
 DEFAULT_WORKSPACE = PROJECT_ROOT / "build/live-build/work"
 
 
@@ -252,6 +253,21 @@ def assemble_inputs(workspace: Path, product: dict) -> None:
         overlay_target,
         dirs_exist_ok=True,
         ignore=shutil.ignore_patterns(".gitkeep"),
+    )
+    calamares_target = overlay_target / "etc/calamares"
+    branding_target = calamares_target / "branding/lc300a"
+    branding_target.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(INSTALLER / "calamares/settings.conf", calamares_target / "settings.conf")
+    shutil.copytree(
+        INSTALLER / "modules", calamares_target / "modules", dirs_exist_ok=True
+    )
+    shutil.copytree(INSTALLER / "branding", branding_target, dirs_exist_ok=True)
+    experience = experience_config()
+    shutil.copy2(
+        PROJECT_ROOT / experience["assets"]["logo"], branding_target / "lc300a-mark.svg"
+    )
+    shutil.copy2(
+        PROJECT_ROOT / experience["assets"]["wallpaper_light"], branding_target / "welcome.svg"
     )
     for source, relative in brand_assets().items():
         target = overlay_target / relative
