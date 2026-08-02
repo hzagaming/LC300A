@@ -57,6 +57,12 @@ class ValidateAudioOutputTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 VALIDATOR.validate(path, 0.5, 256)
 
+    def test_rejects_excessive_active_audio_duration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_wav(directory, [1000] * 8000)
+            with self.assertRaises(ValueError):
+                VALIDATOR.validate(path, 0.5, 256, 0.5)
+
 
 if __name__ == "__main__":
     unittest.main()

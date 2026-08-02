@@ -24,6 +24,17 @@ class ConfigureLiveTest(unittest.TestCase):
     def test_release_quoting_escapes_shell_expansion(self):
         self.assertEqual(CONFIGURE.quote_release('a"b$c`d\\e'), '"a\\"b\\$c\\`d\\\\e"')
 
+    def test_release_files_describe_current_graphical_experience(self):
+        motd = CONFIGURE.release_files(self.product)["etc/motd"]
+        for value in (
+            self.product["product"]["version"],
+            "Plasma Wayland",
+            "Firefox ESR",
+            "Discover",
+            "Calamares 图形安装器",
+        ):
+            self.assertIn(value, motd)
+
     def test_arguments_use_product_identity(self):
         arguments = CONFIGURE.live_build_arguments(self.product)
         boot_parameters = arguments[arguments.index("--bootappend-live") + 1]

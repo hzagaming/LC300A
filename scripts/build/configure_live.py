@@ -88,12 +88,22 @@ def release_files(product: dict) -> dict[str, str]:
             "",
         )
     )
+    motd = "\n".join(
+        (
+            f'{metadata["display_name"]} {metadata["version"]} 开发 Live 环境',
+            "",
+            "图形体验：Plasma Wayland、Firefox ESR、Discover 应用商店与 Calamares 图形安装器。",
+            "可从启动菜单选择图形桌面或纯文字模式；本系统仅用于开发测试。",
+            "",
+        )
+    )
     return {
         "usr/lib/os-release": os_release,
         "etc/lc300a-release": lc300a_release,
         "etc/live/config.conf.d/lc300a.conf": live_config,
         "etc/sudoers.d/010_lc300a-live": sudoers,
         "etc/sddm.conf.d/lc300a.conf": sddm,
+        "etc/motd": motd,
     }
 
 

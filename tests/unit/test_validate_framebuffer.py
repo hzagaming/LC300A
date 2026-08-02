@@ -89,6 +89,22 @@ class ValidateFramebufferTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 VALIDATOR.validate_content_region(path, 0.002)
 
+    def test_accepts_rich_primary_content_palette(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pixels = bytes(
+                channel
+                for index in range(64 * 48)
+                for channel in (index % 251, (index * 5) % 251, (index * 11) % 251)
+            )
+            path = self.write_ppm(directory, 64, 48, pixels)
+            VALIDATOR.validate_content_palette(path, 32)
+
+    def test_rejects_flat_primary_content_palette(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_ppm(directory, 64, 48, bytes((248, 248, 248)) * 64 * 48)
+            with self.assertRaises(ValueError):
+                VALIDATOR.validate_content_palette(path, 32)
+
 
 if __name__ == "__main__":
     unittest.main()

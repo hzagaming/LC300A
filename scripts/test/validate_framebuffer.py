@@ -55,6 +55,25 @@ def validate_content_region(path: Path, minimum_dark_ratio: float) -> None:
         raise ValueError(f"页面内容区域深色像素仅占 {ratio:.2%}")
 
 
+def validate_content_palette(path: Path, minimum_colors: int) -> None:
+    if not 2 <= minimum_colors <= 4096:
+        raise ValueError("内容区域颜色数量必须在 2 到 4096 之间")
+    width, height, pixels = ppm(path)
+    left, right = int(width * 0.35), int(width * 0.85)
+    top, bottom = int(height * 0.15), int(height * 0.85)
+    region_width = right - left
+    total = region_width * (bottom - top)
+    step = max(1, total // 8192)
+    colors = set()
+    for index in range(0, total, step):
+        y = top + index // region_width
+        x = left + index % region_width
+        offset = (y * width + x) * 3
+        colors.add(tuple(channel // 16 for channel in pixels[offset : offset + 3]))
+    if len(colors) < minimum_colors:
+        raise ValueError(f"主内容区域仅包含 {len(colors)} 种量化颜色")
+
+
 def change_ratio(reference: Path, candidate: Path) -> float:
     width, height, reference_pixels = ppm(reference)
     candidate_width, candidate_height, candidate_pixels = ppm(candidate)
@@ -95,12 +114,15 @@ def main() -> int:
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--minimum-change-ratio", type=float, default=0.05)
     parser.add_argument("--minimum-content-dark-ratio", type=float)
+    parser.add_argument("--minimum-content-colors", type=int)
     parser.add_argument("--maximum-change-ratio", type=float)
     arguments = parser.parse_args()
     try:
         validate(arguments.screenshot)
         if arguments.minimum_content_dark_ratio is not None:
             validate_content_region(arguments.screenshot, arguments.minimum_content_dark_ratio)
+        if arguments.minimum_content_colors is not None:
+            validate_content_palette(arguments.screenshot, arguments.minimum_content_colors)
         if arguments.reference:
             if arguments.maximum_change_ratio is None:
                 validate_transition(arguments.reference, arguments.screenshot, arguments.minimum_change_ratio)

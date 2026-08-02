@@ -317,7 +317,10 @@ def validate_readiness() -> None:
         "--minimum-change-ratio 0.15",
         "--minimum-change-ratio 0.01",
         "--minimum-content-dark-ratio 0.002",
+        "--minimum-content-colors 32",
         "--maximum-change-ratio 0.05",
+        "--maximum-active-duration 2.5",
+        "自动会话音效有效且未检测到自动 BGM",
         "local cpu=qemu64",
         "-vga virtio",
     ):
@@ -330,9 +333,17 @@ def validate_readiness() -> None:
         raise ValueError("串口桥不得删除由 QEMU 持有的串口 socket")
     if 'local restored="$PROJECT_ROOT/build/artifacts/apps-$name-restored.ppm"' not in qemu:
         raise ValueError("图形应用测试缺少独立的桌面恢复截图")
-    motd = (OVERLAY / "etc/motd").read_text(encoding="utf-8")
-    if "阶段 1" in motd or "不代表完整桌面系统" in motd:
-        raise ValueError("登录欢迎信息仍描述过时的阶段 1 控制台体验")
+    product = tomllib.loads((BRANDING / "product.toml").read_text(encoding="utf-8"))
+    motd = CONFIGURE.release_files(product)["etc/motd"]
+    for value in (
+        product["product"]["version"],
+        "Plasma Wayland",
+        "Firefox ESR",
+        "Discover",
+        "Calamares 图形安装器",
+    ):
+        if value not in motd:
+            raise ValueError(f"登录欢迎信息缺少: {value}")
 
 
 def validate() -> None:
