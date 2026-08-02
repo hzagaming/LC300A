@@ -47,6 +47,16 @@ class ValidateAudioOutputTest(unittest.TestCase):
             path.write_bytes(content)
             VALIDATOR.validate(path, 0.5, 256)
 
+    def test_rejects_incomplete_pcm_frame(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_wav(directory, [0, 4000, -4000, 1000] * 4000)
+            content = bytearray(path.read_bytes())
+            content[4:8] = bytes(4)
+            content[40:44] = bytes(4)
+            path.write_bytes(content + b"\x01")
+            with self.assertRaises(ValueError):
+                VALIDATOR.validate(path, 0.5, 256)
+
 
 if __name__ == "__main__":
     unittest.main()

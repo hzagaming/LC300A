@@ -37,6 +37,24 @@ def validate(path: Path, minimum_width: int = 800, minimum_height: int = 600) ->
         raise ValueError("桌面截图平均亮度过低")
 
 
+def validate_content_region(path: Path, minimum_dark_ratio: float) -> None:
+    if not 0 < minimum_dark_ratio <= 1:
+        raise ValueError("内容区域深色像素比例必须在 0 到 1 之间")
+    width, height, pixels = ppm(path)
+    left, right = int(width * 0.1), int(width * 0.9)
+    top, bottom = int(height * 0.15), int(height * 0.85)
+    dark = 0
+    total = (right - left) * (bottom - top)
+    for y in range(top, bottom):
+        row = y * width * 3
+        for x in range(left, right):
+            offset = row + x * 3
+            dark += sum(pixels[offset : offset + 3]) < 384
+    ratio = dark / total
+    if ratio < minimum_dark_ratio:
+        raise ValueError(f"页面内容区域深色像素仅占 {ratio:.2%}")
+
+
 def change_ratio(reference: Path, candidate: Path) -> float:
     width, height, reference_pixels = ppm(reference)
     candidate_width, candidate_height, candidate_pixels = ppm(candidate)
@@ -76,10 +94,13 @@ def main() -> int:
     parser.add_argument("screenshot", type=Path)
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--minimum-change-ratio", type=float, default=0.05)
+    parser.add_argument("--minimum-content-dark-ratio", type=float)
     parser.add_argument("--maximum-change-ratio", type=float)
     arguments = parser.parse_args()
     try:
         validate(arguments.screenshot)
+        if arguments.minimum_content_dark_ratio is not None:
+            validate_content_region(arguments.screenshot, arguments.minimum_content_dark_ratio)
         if arguments.reference:
             if arguments.maximum_change_ratio is None:
                 validate_transition(arguments.reference, arguments.screenshot, arguments.minimum_change_ratio)

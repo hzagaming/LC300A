@@ -9,10 +9,10 @@ windowPlacement: center
 strings:
   productName: 落川OS 300型
   shortProductName: 落川OS
-  version: 0.3.0-dev
-  shortVersion: 0.3.0
-  versionedName: 落川OS 300型 0.3.0-dev
-  shortVersionedName: 落川OS 0.3.0
+  version: 0.3.1-dev
+  shortVersion: 0.3.1
+  versionedName: 落川OS 300型 0.3.1-dev
+  shortVersionedName: 落川OS 0.3.1
   bootloaderEntryName: LC300A
   productUrl: https://github.com/charliezhong/LC300A
   supportUrl: https://github.com/charliezhong/LC300A/issues

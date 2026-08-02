@@ -56,6 +56,7 @@ def validate_packages() -> None:
         "plasma-nm",
         "plasma-pa",
         "plasma-workspace",
+        "python3",
         "sddm",
         "sddm-theme-breeze",
         "systemsettings",
@@ -302,9 +303,12 @@ def validate_readiness() -> None:
         "firefox-esr",
         "plasma-discover",
         "https://example.com",
-        "enter_firefox_url",
         "apps-firefox-page.ppm",
-        "shift-semicolon",
+        "urllib.request",
+        "LC300A_FIREFOX_NETWORK",
+        "LC300A_FIREFOX_NAVIGATE",
+        "systemd-run --user --wait --collect --quiet",
+        "--new-tab https://example.com",
         "ich9-intel-hda",
         "hda-output,audiodev=audio0",
         "quit_qemu",
@@ -312,12 +316,15 @@ def validate_readiness() -> None:
         "validate_audio_output.py",
         "--minimum-change-ratio 0.15",
         "--minimum-change-ratio 0.01",
+        "--minimum-content-dark-ratio 0.002",
         "--maximum-change-ratio 0.05",
         "local cpu=qemu64",
         "-vga virtio",
     ):
         if value not in qemu:
             raise ValueError(f"QEMU 桌面测试缺少: {value}")
+    if "enter_firefox_url" in qemu:
+        raise ValueError("Firefox 联网测试仍使用不可靠的 QEMU 逐键网址输入")
     serial_bridge = qemu.split("start_serial_bridge() {", 1)[1].split("\n}", 1)[0]
     if 'rm -f -- "$SERIAL_SOCKET"' in serial_bridge:
         raise ValueError("串口桥不得删除由 QEMU 持有的串口 socket")

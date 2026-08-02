@@ -89,6 +89,7 @@ complete_installer() {
   local users_screenshot="$PROJECT_ROOT/build/artifacts/installer-users.ppm"
   local summary_screenshot="$PROJECT_ROOT/build/artifacts/installer-summary.ppm"
   local installing_screenshot="$PROJECT_ROOT/build/artifacts/installer-installing.ppm"
+  local finished_screenshot="$PROJECT_ROOT/build/artifacts/installer-finished.ppm"
 
   for page in locale keyboard partition; do
     send_monitor_key alt-n
@@ -126,7 +127,9 @@ complete_installer() {
       LC300A_INSTALLER_FAILURE_LOG 30 || true
     return 1
   }
-  printf '[OK] Calamares 已完成虚拟硬盘安装\n'
+  wait_for_framebuffer "$finished_screenshot" 120 \
+    --reference "$installing_screenshot" --minimum-change-ratio 0.04
+  printf '[OK] Calamares 已完成虚拟硬盘安装并绘制完成页\n'
 }
 
 installed_qemu_arguments() {

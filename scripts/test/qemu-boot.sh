@@ -244,31 +244,6 @@ with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
 PY
 }
 
-enter_firefox_url() {
-  python3 - "$MONITOR_SOCKET" <<'PY'
-import socket
-import sys
-import time
-
-mapping = {":": "shift-semicolon", "/": "slash", ".": "dot", "-": "minus"}
-with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
-    connection.settimeout(10)
-    connection.connect(sys.argv[1])
-    connection.recv(4096)
-
-    def send(key, delay=0.2):
-        connection.sendall(f"sendkey {key}\n".encode("utf-8"))
-        time.sleep(delay)
-
-    send("ctrl-l", 0.5)
-    for character in "https://example.com":
-        send(mapping.get(character, character))
-    time.sleep(1)
-    send("ret", 2)
-    send("esc", 0.5)
-PY
-}
-
 quit_qemu() {
   python3 - "$MONITOR_SOCKET" <<'PY'
 import socket
@@ -524,9 +499,15 @@ test_apps() {
     wait_for_framebuffer "$screenshot" "$launch_timeout" \
       --reference "$baseline" --minimum-change-ratio 0.15 || return 1
     if [[ $name == firefox ]]; then
-      enter_firefox_url
+      run_guest_command \
+        "/usr/bin/python3 -c \"import urllib.request; response = urllib.request.urlopen('https://example.com', timeout=30); content = response.read(); assert response.status == 200 and b'Example Domain' in content\"" \
+        LC300A_FIREFOX_NETWORK 45 || return 1
+      run_guest_command \
+        "/usr/bin/systemd-run --user --wait --collect --quiet -- /usr/bin/firefox-esr --new-tab https://example.com" \
+        LC300A_FIREFOX_NAVIGATE 30 || return 1
       wait_for_framebuffer "$firefox_page" "$launch_timeout" \
-        --reference "$screenshot" --minimum-change-ratio 0.01 || return 1
+        --reference "$screenshot" --minimum-change-ratio 0.01 \
+        --minimum-content-dark-ratio 0.002 || return 1
     fi
     run_guest_command \
       "systemctl --user stop '$unit'; ! systemctl --user is-active --quiet '$unit'" \

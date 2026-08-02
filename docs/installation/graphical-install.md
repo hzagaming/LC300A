@@ -46,4 +46,4 @@ make test-apps
 make test-installer
 ```
 
-`make test-installer` 会创建临时 32G qcow2 磁盘，在禁用虚拟机网络后执行完整安装，然后移除 ISO 参数，验证 UEFI 启动、分区格式、安装器清理、串口登录、SDDM 与 Plasma。macOS Apple Silicon 使用 x86_64 TCG 模拟，完整安装可能需要约一小时。
+`make test-installer` 会创建临时 32G qcow2 磁盘，在禁用虚拟机网络后执行完整安装，验证安装进度和完成页，再移除 ISO 参数，验证 UEFI 启动、分区格式、安装器清理、串口登录、SDDM 与 Plasma。macOS Apple Silicon 使用 x86_64 TCG 模拟，完整安装可能需要约一小时。

@@ -36,10 +36,15 @@ def read_pcm(path: Path) -> tuple[int, int, int, bytes]:
 
 
 def validate(path: Path, minimum_duration: float = 0.5, minimum_peak: int = 256) -> tuple[float, int, int]:
+    if minimum_duration <= 0 or not 0 < minimum_peak <= 32767:
+        raise ValueError("音频校验阈值无效")
     sample_width, frame_rate, channels, frames = read_pcm(path)
     if sample_width != 2 or frame_rate <= 0 or channels <= 0:
         raise ValueError("仅支持有效的 16-bit PCM WAV")
-    frame_count = len(frames) // (sample_width * channels)
+    frame_size = sample_width * channels
+    if not frames or len(frames) % frame_size:
+        raise ValueError("PCM 音频包含不完整帧")
+    frame_count = len(frames) // frame_size
     duration = frame_count / frame_rate
     if duration < minimum_duration:
         raise ValueError(f"音频输出仅持续 {duration:.2f} 秒")

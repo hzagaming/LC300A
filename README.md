@@ -41,7 +41,7 @@ make test-apps
 make test-installer
 ```
 
-当前 `0.3.0-dev` 开发镜像为 1,820,854,272 字节、1,617 个包，SHA-256：`00d5d01326a856d0dae417578bb401cce73cbd860b5f367226465e026a1a8b79`。
+当前 `0.3.1-dev` 开发镜像为 1,820,993,536 字节、1,617 个包，SHA-256：`bae3e6104d6cd2b986c20f687d01fb2e5c6f3b8d18dea4440f0347856d54eea4`。
 
 ### 启动系统
 
@@ -71,7 +71,7 @@ make test-installer
 
 `make doctor` 只诊断环境，不修改宿主机。`make bootstrap` 会明确请求确认后安装当前平台所需的开发依赖。
 
-`make test-apps` 会实际登录 Live 串口会话，在 Plasma 用户会话中打开 Konsole、Firefox 和 Discover，验证真实窗口、Firefox 外网页面以及 QEMU 捕获的非静音 PCM；该测试需要可访问 `https://example.com`。
+`make test-apps` 会实际登录 Live 串口会话，在 Plasma 用户会话中打开 Konsole、Firefox 和 Discover，验证真实窗口、HTTPS/DNS/证书与 Firefox 正文绘制，以及 QEMU 捕获的非静音 PCM；该测试需要可访问 `https://example.com`。
 
 ISO 构建必须在 Debian/Ubuntu x86_64 环境完成。安装 Homebrew QEMU 后，macOS Apple Silicon 可运行已有 ISO 和执行 UEFI 模拟启动测试；发布验收仍以原生 x86_64 Linux 为准。详见 `docs/development/environment.md`。
 

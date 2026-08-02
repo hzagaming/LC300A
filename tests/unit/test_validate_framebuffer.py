@@ -73,6 +73,22 @@ class ValidateFramebufferTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 VALIDATOR.validate_restoration(reference, candidate, 0.02)
 
+    def test_accepts_visible_content_in_central_viewport(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pixels = bytearray(bytes((248, 248, 248)) * 64 * 48)
+            for y in range(12, 36):
+                for x in range(20, 44):
+                    offset = (y * 64 + x) * 3
+                    pixels[offset : offset + 3] = bytes((32, 32, 32))
+            path = self.write_ppm(directory, 64, 48, bytes(pixels))
+            VALIDATOR.validate_content_region(path, 0.002)
+
+    def test_rejects_blank_central_viewport(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_ppm(directory, 64, 48, bytes((248, 248, 248)) * 64 * 48)
+            with self.assertRaises(ValueError):
+                VALIDATOR.validate_content_region(path, 0.002)
+
 
 if __name__ == "__main__":
     unittest.main()

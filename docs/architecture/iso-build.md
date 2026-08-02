@@ -66,7 +66,7 @@ GRUB 的默认图形入口使用 `systemd.unit=graphical.target` 和 quiet/splas
 
 阶段 1 验收使用 QEMU `q35`、成对 OVMF CODE/VARS pflash 和串口日志验证 UEFI 启动，并在 Live 用户、home、shell 与 sudo 组就绪后输出 `LC300A_BOOT_OK`。阶段 2 验收等待 SDDM 自动登录、KWin Wayland、PlasmaShell D-Bus、PipeWire、WirePlumber 与 Wayland socket 就绪，所有谓词均失败关闭；输出 `LC300A_DESKTOP_OK` 后在有限时间内抓取并验证真实帧缓冲，拒绝纯色、低亮度及大面积黑屏。TCG 使用 `qemu64`，KVM 使用 `host` CPU。
 
-阶段 3 验收关闭 QEMU 网络，在空白 32 GiB qcow2 上通过键盘操作 Calamares，逐页验证真实帧缓冲并完成安装。随后移除 ISO 参数，从虚拟硬盘启动，验证 GPT、ext4、FAT EFI、GRUB、安装器与 Live 组件清理、串口登录、SDDM 和 Plasma。构建 VM 与本地 x86_64 TCG 测试不得并行运行，避免 CPU 竞争造成图形就绪假性超时。
+阶段 3 验收关闭 QEMU 网络，在空白 32 GiB qcow2 上通过键盘操作 Calamares，逐页验证真实帧缓冲、安装进度与完成页。随后移除 ISO 参数，从虚拟硬盘启动，验证 GPT、ext4、FAT EFI、GRUB、安装器与 Live 组件清理、串口登录、SDDM 和 Plasma。应用验收通过访客系统真实 HTTPS 请求验证 DNS、证书和页面内容，再驱动 Firefox 打开同一页面，避免浏览器错误页产生像素变化后被误判为联网成功。构建 VM 与本地 x86_64 TCG 测试不得并行运行，避免 CPU 竞争造成图形就绪假性超时。
 
 virtio-pci DRM 在当前无 3D QEMU 路径中禁用 KWin atomic modesetting，避免 KWin 逻辑输出已启用但内核 CRTC/scanout 仍关闭；其他 DRM 驱动保持默认。PlasmaShell 启动前会等待内核 DRM connector 与 KWin 输出同时启用，仅当 KWin 明确使用 llvmpipe 时才切换到软件 Qt Quick。这样既覆盖无 3D 虚拟机的 EGL/DRI2 失败，也不改变真实硬件的渲染路径。macOS Apple Silicon 上的 x86_64 模拟可用于开发验收，但发布验收必须在原生 x86_64 Linux 环境执行。
 

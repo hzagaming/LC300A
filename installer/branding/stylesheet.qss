@@ -37,3 +37,23 @@ QComboBox {
     border-radius: 5px;
     background: #FFFFFF;
 }
+
+QRadioButton,
+QCheckBox {
+    min-height: 44px;
+    padding: 0 6px;
+    spacing: 8px;
+    border: 2px solid transparent;
+    border-radius: 5px;
+}
+
+QRadioButton:focus,
+QCheckBox:focus {
+    border-color: #0A5FB5;
+}
+
+QRadioButton::indicator,
+QCheckBox::indicator {
+    width: 20px;
+    height: 20px;
+}

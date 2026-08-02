@@ -96,7 +96,21 @@ def validate() -> None:
     )
     stylesheet = require_text(
         PROJECT_ROOT / "installer/branding/stylesheet.qss",
-        ("min-height: 38px;", "QPushButton:focus", "QLineEdit:focus", "QComboBox:focus"),
+        (
+            "min-height: 38px;",
+            "QPushButton:focus",
+            "QLineEdit:focus",
+            "QComboBox:focus",
+            "QRadioButton,",
+            "QCheckBox",
+            "min-height: 44px;",
+            "QRadioButton:focus",
+            "QCheckBox:focus",
+            "QRadioButton::indicator",
+            "QCheckBox::indicator",
+            "width: 20px;",
+            "height: 20px;",
+        ),
     )
     if stylesheet.count("min-height: 38px;") != 2:
         raise ValueError("安装器按钮和输入框未达到 44px 交互目标")
@@ -181,6 +195,7 @@ def validate() -> None:
             "installer-users.ppm",
             "installer-summary.ppm",
             "installer-installing.ppm",
+            "installer-finished.ppm",
             "INSTALLER_TIMEOUT_SECONDS:-3600",
             "alt-n",
             "alt-i",
