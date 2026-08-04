@@ -40,11 +40,14 @@ def validate(
     minimum_duration: float = 0.5,
     minimum_peak: int = 256,
     maximum_active_duration: float | None = None,
+    minimum_active_duration: float | None = None,
 ) -> tuple[float, int, int]:
     if minimum_duration <= 0 or not 0 < minimum_peak <= 32767:
         raise ValueError("音频校验阈值无效")
     if maximum_active_duration is not None and maximum_active_duration <= 0:
         raise ValueError("最大音频活跃时长无效")
+    if minimum_active_duration is not None and minimum_active_duration <= 0:
+        raise ValueError("最小音频活跃时长无效")
     sample_width, frame_rate, channels, frames = read_pcm(path)
     if sample_width != 2 or frame_rate <= 0 or channels <= 0:
         raise ValueError("仅支持有效的 16-bit PCM WAV")
@@ -61,6 +64,10 @@ def validate(
     if peak < minimum_peak or nonzero == 0:
         raise ValueError(f"音频输出为静音（峰值 {peak}，非零采样 {nonzero}）")
     active_duration = nonzero / (frame_rate * channels)
+    if minimum_active_duration is not None and active_duration < minimum_active_duration:
+        raise ValueError(
+            f"音频活跃 {active_duration:.2f} 秒，低于 {minimum_active_duration:.2f} 秒下限"
+        )
     if maximum_active_duration is not None and active_duration > maximum_active_duration:
         raise ValueError(
             f"音频活跃 {active_duration:.2f} 秒，超过 {maximum_active_duration:.2f} 秒上限"
@@ -73,6 +80,7 @@ def main() -> int:
     parser.add_argument("wav", type=Path)
     parser.add_argument("--minimum-duration", type=float, default=0.5)
     parser.add_argument("--minimum-peak", type=int, default=256)
+    parser.add_argument("--minimum-active-duration", type=float)
     parser.add_argument("--maximum-active-duration", type=float)
     arguments = parser.parse_args()
     try:
@@ -81,6 +89,7 @@ def main() -> int:
             arguments.minimum_duration,
             arguments.minimum_peak,
             arguments.maximum_active_duration,
+            arguments.minimum_active_duration,
         )
     except (EOFError, OSError, ValueError, wave.Error) as error:
         print(f"[ERROR] 音频输出校验失败: {error}", file=sys.stderr)

@@ -497,9 +497,14 @@ test_apps() {
     sleep "$settle_seconds"
     send_monitor_key shift
     if [[ $name == discover ]]; then
-      wait_for_framebuffer "$screenshot" "$launch_timeout" \
+      if ! wait_for_framebuffer "$screenshot" "$launch_timeout" \
         --reference "$baseline" --minimum-change-ratio 0.15 \
-        --minimum-content-colors 32 || return 1
+        --minimum-content-colors 32; then
+        run_guest_command \
+          "sudo journalctl -u packagekit.service -n 120 --no-pager || true; /usr/bin/appstreamcli status || true; find /var/lib/swcatalog -maxdepth 3 -type f -print || true; /usr/bin/python3 -c \"import urllib.request; assert urllib.request.urlopen('http://mirrors.tuna.tsinghua.edu.cn/debian/dists/trixie/InRelease', timeout=30).status == 200\" || true" \
+          LC300A_DISCOVER_DIAGNOSTICS 60 || true
+        return 1
+      fi
     else
       wait_for_framebuffer "$screenshot" "$launch_timeout" \
         --reference "$baseline" --minimum-change-ratio 0.15 || return 1
@@ -531,14 +536,15 @@ test_apps() {
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-discover --collect -- /usr/local/bin/plasma-discover" || return 1
 
   python3 "$PROJECT_ROOT/scripts/test/validate_audio_output.py" "$AUDIO_OUTPUT" \
-    --maximum-active-duration 2.5 || return 1
+    --maximum-active-duration 2.25 || return 1
   printf '[OK] 自动会话音效有效且未检测到自动 BGM\n'
   run_guest_command \
     "/usr/bin/pw-play --volume=0.45 /usr/share/sounds/luochuan-flow/stereo/desktop-login.wav" \
     LC300A_AUDIO_PLAYBACK 60 || return 1
   stop_serial_bridge
   quit_qemu
-  python3 "$PROJECT_ROOT/scripts/test/validate_audio_output.py" "$AUDIO_OUTPUT" || return 1
+  python3 "$PROJECT_ROOT/scripts/test/validate_audio_output.py" "$AUDIO_OUTPUT" \
+    --minimum-active-duration 2.5 || return 1
   printf '[OK] Konsole、Firefox、Discover 与音频图形交互测试通过\n'
 }
 

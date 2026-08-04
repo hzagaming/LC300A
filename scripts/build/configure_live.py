@@ -16,6 +16,8 @@ OVERLAYS = PROJECT_ROOT / "distro/overlays"
 HOOKS = PROJECT_ROOT / "distro/hooks"
 INSTALLER = PROJECT_ROOT / "installer"
 DEFAULT_WORKSPACE = PROJECT_ROOT / "build/live-build/work"
+BUILD_DEBIAN_MIRROR = "http://mirrors.tuna.tsinghua.edu.cn/debian"
+BUILD_SECURITY_MIRROR = "http://mirrors.tuna.tsinghua.edu.cn/debian-security"
 
 
 def product_config() -> dict:
@@ -200,6 +202,34 @@ def live_build_arguments(product: dict) -> list[str]:
         base["architecture"],
         "--distribution",
         base["suite"],
+        "--mirror-bootstrap",
+        BUILD_DEBIAN_MIRROR,
+        "--mirror-chroot",
+        BUILD_DEBIAN_MIRROR,
+        "--mirror-chroot-security",
+        BUILD_SECURITY_MIRROR,
+        "--mirror-chroot-volatile",
+        BUILD_DEBIAN_MIRROR,
+        "--mirror-binary",
+        BUILD_DEBIAN_MIRROR,
+        "--mirror-binary-security",
+        BUILD_SECURITY_MIRROR,
+        "--mirror-binary-volatile",
+        BUILD_DEBIAN_MIRROR,
+        "--parent-mirror-bootstrap",
+        BUILD_DEBIAN_MIRROR,
+        "--parent-mirror-chroot",
+        BUILD_DEBIAN_MIRROR,
+        "--parent-mirror-chroot-security",
+        BUILD_SECURITY_MIRROR,
+        "--parent-mirror-chroot-volatile",
+        BUILD_DEBIAN_MIRROR,
+        "--parent-mirror-binary",
+        BUILD_DEBIAN_MIRROR,
+        "--parent-mirror-binary-security",
+        BUILD_SECURITY_MIRROR,
+        "--parent-mirror-binary-volatile",
+        BUILD_DEBIAN_MIRROR,
         "--archive-areas",
         "main contrib non-free-firmware",
         "--binary-images",
@@ -218,6 +248,8 @@ def live_build_arguments(product: dict) -> list[str]:
         "xz",
         "--checksums",
         "sha256",
+        "--apt-source-archives",
+        "false",
         "--apt-recommends",
         "true",
         "--security",
@@ -291,9 +323,18 @@ def assemble_inputs(workspace: Path, product: dict) -> None:
         target = overlay_target / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
+    runtime_sources = (
+        f"deb {BUILD_DEBIAN_MIRROR} {product['base']['suite']} "
+        "main contrib non-free-firmware\n"
+        f"deb {BUILD_DEBIAN_MIRROR} {product['base']['suite']}-updates "
+        "main contrib non-free-firmware\n"
+    )
+    sources_target = overlay_target / "etc/apt/sources.list"
+    sources_target.parent.mkdir(parents=True, exist_ok=True)
+    sources_target.write_text(runtime_sources, encoding="utf-8")
     security_source = (
-        "deb http://security.debian.org/debian-security "
-        f'{product["base"]["suite"]}-security main contrib non-free-firmware\n'
+        f"deb {BUILD_SECURITY_MIRROR} {product['base']['suite']}-security "
+        "main contrib non-free-firmware\n"
     )
     for suffix in ("chroot", "binary"):
         (archives_target / f"lc300a-security.list.{suffix}").write_text(

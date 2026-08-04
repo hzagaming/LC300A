@@ -74,6 +74,28 @@ def validate_content_palette(path: Path, minimum_colors: int) -> None:
         raise ValueError(f"主内容区域仅包含 {len(colors)} 种量化颜色")
 
 
+def validate_content_chroma(path: Path, minimum_ratio: float) -> None:
+    if not 0 < minimum_ratio <= 1:
+        raise ValueError("内容区域彩色像素比例必须在 0 到 1 之间")
+    width, height, pixels = ppm(path)
+    left, right = int(width * 0.35), int(width * 0.85)
+    top, bottom = int(height * 0.15), int(height * 0.85)
+    region_width = right - left
+    total = region_width * (bottom - top)
+    step = max(1, total // 8192)
+    chromatic = samples = 0
+    for index in range(0, total, step):
+        y = top + index // region_width
+        x = left + index % region_width
+        offset = (y * width + x) * 3
+        pixel = pixels[offset : offset + 3]
+        chromatic += max(pixel) - min(pixel) >= 32
+        samples += 1
+    ratio = chromatic / samples
+    if ratio < minimum_ratio:
+        raise ValueError(f"主内容区域彩色像素仅占 {ratio:.2%}")
+
+
 def change_ratio(reference: Path, candidate: Path) -> float:
     width, height, reference_pixels = ppm(reference)
     candidate_width, candidate_height, candidate_pixels = ppm(candidate)
@@ -115,6 +137,7 @@ def main() -> int:
     parser.add_argument("--minimum-change-ratio", type=float, default=0.05)
     parser.add_argument("--minimum-content-dark-ratio", type=float)
     parser.add_argument("--minimum-content-colors", type=int)
+    parser.add_argument("--minimum-content-chroma-ratio", type=float)
     parser.add_argument("--maximum-change-ratio", type=float)
     arguments = parser.parse_args()
     try:
@@ -123,6 +146,8 @@ def main() -> int:
             validate_content_region(arguments.screenshot, arguments.minimum_content_dark_ratio)
         if arguments.minimum_content_colors is not None:
             validate_content_palette(arguments.screenshot, arguments.minimum_content_colors)
+        if arguments.minimum_content_chroma_ratio is not None:
+            validate_content_chroma(arguments.screenshot, arguments.minimum_content_chroma_ratio)
         if arguments.reference:
             if arguments.maximum_change_ratio is None:
                 validate_transition(arguments.reference, arguments.screenshot, arguments.minimum_change_ratio)

@@ -9,9 +9,9 @@ target=$(awk '$3 == "proc" && $2 ~ /calamares/ { sub(/\/proc$/, "", $2); print $
 }
 
 cat >"$target/etc/apt/sources.list" <<'EOF'
-deb http://deb.debian.org/debian trixie main contrib non-free-firmware
-deb http://deb.debian.org/debian trixie-updates main contrib non-free-firmware
-deb http://security.debian.org/debian-security trixie-security main contrib non-free-firmware
+deb https://mirrors.tuna.tsinghua.edu.cn/debian trixie main contrib non-free-firmware
+deb https://mirrors.tuna.tsinghua.edu.cn/debian trixie-updates main contrib non-free-firmware
+deb https://mirrors.tuna.tsinghua.edu.cn/debian-security trixie-security main contrib non-free-firmware
 EOF
 rm -f "$target/etc/apt/sources.list.d/"*.list
 

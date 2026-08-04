@@ -87,6 +87,7 @@ complete_installer() {
   local partition_screenshot="$PROJECT_ROOT/build/artifacts/installer-partition.ppm"
   local partition_selected_screenshot="$PROJECT_ROOT/build/artifacts/installer-partition-choice.ppm"
   local users_screenshot="$PROJECT_ROOT/build/artifacts/installer-users.ppm"
+  local users_complete_screenshot="$PROJECT_ROOT/build/artifacts/installer-users-complete.ppm"
   local summary_screenshot="$PROJECT_ROOT/build/artifacts/installer-summary.ppm"
   local installing_screenshot="$PROJECT_ROOT/build/artifacts/installer-installing.ppm"
   local finished_screenshot="$PROJECT_ROOT/build/artifacts/installer-finished.ppm"
@@ -112,9 +113,13 @@ complete_installer() {
   type_monitor_text "$INSTALLER_TEST_PASSWORD"
   send_monitor_key tab
   type_monitor_text "$INSTALLER_TEST_PASSWORD"
+  send_monitor_key tab
+  sleep 3
+  wait_for_framebuffer "$users_complete_screenshot" 60 \
+    --reference "$users_screenshot" --minimum-change-ratio 0.01
   send_monitor_key alt-n
   wait_for_framebuffer "$summary_screenshot" 60 \
-    --reference "$users_screenshot" --minimum-change-ratio 0.04
+    --reference "$users_complete_screenshot" --minimum-change-ratio 0.04
   send_monitor_key alt-i
   sleep 5
   send_monitor_key ret
@@ -211,14 +216,11 @@ launch_installer() {
     "sudo -E systemd-inhibit --what=idle:sleep --who='LC300A Installer' --why='LC300A installation test' --mode=block true" \
     LC300A_INSTALLER_INHIBIT 30
   run_guest_command \
-    "/usr/bin/systemd-run --user --unit=lc300a-e2e-installer --collect -- /usr/local/bin/lc300a-installer -d" \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-installer --collect -- /usr/local/bin/lc300a-installer" \
     LC300A_INSTALLER_START 30
   run_guest_command \
     "found=; for attempt in \$(seq 1 120); do if pgrep -x calamares >/dev/null; then found=1; break; fi; sleep 1; done; test \"\$found\" = 1" \
     LC300A_INSTALLER_ACTIVE 130
-  run_guest_command \
-    "found=; for attempt in \$(seq 1 240); do if sudo journalctl _SYSTEMD_USER_UNIT=lc300a-e2e-installer.service --no-pager | grep -Fq 'ViewModule \"finished@finished\" loading complete.'; then found=1; break; fi; sleep 1; done; test \"\$found\" = 1" \
-    LC300A_INSTALLER_READY 250
 }
 
 wait_for_installer_stability() {
@@ -228,7 +230,10 @@ wait_for_installer_stability() {
   local stable_frames=0
 
   while ((elapsed < 120)); do
-    if capture_framebuffer "$INSTALLER_SCREENSHOT"; then
+    if capture_framebuffer "$INSTALLER_SCREENSHOT" && \
+      python3 "$PROJECT_ROOT/scripts/test/validate_framebuffer.py" \
+        "$INSTALLER_SCREENSHOT" --minimum-content-colors 32 \
+        --minimum-content-chroma-ratio 0.15 >/dev/null 2>&1; then
       checksum=$(cksum <"$INSTALLER_SCREENSHOT")
       if [[ $checksum == "$previous" ]]; then
         ((stable_frames += 1))
@@ -306,7 +311,8 @@ test_installer_ui() {
     "sudo journalctl _SYSTEMD_USER_UNIT=lc300a-e2e-installer.service -n 80 --no-pager || true" \
     LC300A_INSTALLER_LOG 30
   wait_for_framebuffer "$INSTALLER_SCREENSHOT" 120 \
-    --reference "$INSTALLER_BASELINE" --minimum-change-ratio 0.15
+    --reference "$INSTALLER_BASELINE" --minimum-change-ratio 0.15 \
+    --minimum-content-colors 32 --minimum-content-chroma-ratio 0.15
   printf '[OK] Calamares 已启动并绘制品牌欢迎页: %s\n' "$INSTALLER_SCREENSHOT"
   if [[ ${INSTALLER_WALK_PAGES:-0} == 1 ]]; then
     walk_installer_pages

@@ -105,6 +105,17 @@ class ValidateFramebufferTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 VALIDATOR.validate_content_palette(path, 32)
 
+    def test_accepts_chromatic_primary_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_ppm(directory, 64, 48, bytes((32, 128, 208)) * 64 * 48)
+            VALIDATOR.validate_content_chroma(path, 0.15)
+
+    def test_rejects_grayscale_primary_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_ppm(directory, 64, 48, bytes((128, 128, 128)) * 64 * 48)
+            with self.assertRaises(ValueError):
+                VALIDATOR.validate_content_chroma(path, 0.15)
+
 
 if __name__ == "__main__":
     unittest.main()

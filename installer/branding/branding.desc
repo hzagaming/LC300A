@@ -3,16 +3,16 @@ componentName: lc300a
 welcomeStyleCalamares: true
 welcomeExpandingLogo: true
 windowExpanding: normal
-windowSize: 1024px,680px
+windowSize: 1080px,680px
 windowPlacement: center
 
 strings:
   productName: 落川OS 300型
   shortProductName: 落川OS
-  version: 0.3.2-dev
-  shortVersion: 0.3.2
-  versionedName: 落川OS 300型 0.3.2-dev
-  shortVersionedName: 落川OS 0.3.2
+  version: 0.3.3-dev
+  shortVersion: 0.3.3
+  versionedName: 落川OS 300型 0.3.3-dev
+  shortVersionedName: 落川OS 0.3.3
   bootloaderEntryName: LC300A
   productUrl: https://github.com/charliezhong/LC300A
   supportUrl: https://github.com/charliezhong/LC300A/issues

@@ -86,6 +86,7 @@ def validate() -> None:
         PROJECT_ROOT / "installer/branding/branding.desc",
         (
             "componentName: lc300a",
+            "windowSize: 1080px,680px",
             "productName: 落川OS 300型",
             f'version: {product["version"]}',
             f'shortVersion: {product["version_id"]}',
@@ -181,18 +182,20 @@ def validate() -> None:
         if missing:
             raise ValueError(f"Live 文件系统缺少安装器配置: {missing}")
 
-    require_text(
+    qemu = require_text(
         PROJECT_ROOT / "scripts/test/qemu-installer.sh",
         (
             "qemu-img create -q -f qcow2",
             "LC300A_INSTALL_OK",
-            "LC300A_INSTALLER_READY",
             "LC300A_INSTALLER_INHIBIT",
             "stable_frames",
+            "--minimum-content-colors 32",
+            "--minimum-content-chroma-ratio 0.15",
             "select_erase_disk",
             "send_monitor_key spc",
             "installer-partition-choice.ppm",
             "installer-users.ppm",
+            "installer-users-complete.ppm",
             "installer-summary.ppm",
             "installer-installing.ppm",
             "installer-finished.ppm",
@@ -208,6 +211,16 @@ def validate() -> None:
             "installer-test.qcow2",
         ),
     )
+    if "/usr/local/bin/lc300a-installer -d" in qemu:
+        raise ValueError("安装器 E2E 不得使用调试界面")
+    completed_user_form = (
+        'type_monitor_text "$INSTALLER_TEST_PASSWORD"\n'
+        "  send_monitor_key tab\n"
+        "  sleep 3\n"
+        '  wait_for_framebuffer "$users_complete_screenshot"'
+    )
+    if completed_user_form not in qemu:
+        raise ValueError("安装器 E2E 必须等待用户表单校验完成后再截图")
     require_text(
         PROJECT_ROOT / "Makefile",
         ("test-installer:", "qemu-installer.sh install"),

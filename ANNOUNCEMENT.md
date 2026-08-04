@@ -1,17 +1,19 @@
-# 落川OS 300型 0.3.2-dev 公告
+# 落川OS 300型 0.3.3-dev 公告
 
-发布日期：2026-08-02
+发布日期：2026-08-03
 
-`0.3.2-dev` 是阶段 3 图形体验的可靠性补丁版本。本轮重点检查了纯文字启动、Plasma Wayland 桌面、Konsole、Firefox ESR、Discover 应用商店、Calamares 安装器、会话启动音和 BGM 默认策略。
+`0.3.3-dev` 是阶段 3 图形体验与应用可用性的质量更新。本轮逐项复查了图形/纯文字启动、Plasma Wayland、Konsole、Firefox ESR、Discover 应用商店、Calamares、会话启动音和 BGM 默认策略。
 
-Discover E2E 现在会等待主内容区完整绘制并检查应用卡片的色彩丰富度，不再把 `Loading…` 或只有窗口边框的画面误判为可用。音频验收在手工播放前先验证自动会话启动音，并限制自动音频的活跃时长，可同时拦截启动音失效和 BGM 意外自动播放。纯文字模式的登录欢迎语改为由产品配置动态生成，会显示当前版本及 Plasma Wayland、Firefox ESR、Discover 和 Calamares 能力。
+Firefox ESR 首次启动不再额外打开欢迎或隐私标签，并默认关闭数据提交；实机截图只保留测试主动打开的页面。Discover 的构建流程会显式下载 Debian DEP-11 元数据、刷新 AppStream 缓存，成品镜像已识别 2,610 个软件组件并正常显示应用卡片、分类和图标。Live、构建及安装后 APT 源统一切换到清华 Debian 镜像，且不再生成 `deb-src`。
 
-正式候选镜像已通过 UEFI 默认图形启动、纯文字启动、Plasma Wayland 桌面、Konsole、Firefox 真实 HTTPS/DNS/证书/正文、Discover 应用卡片、自动启动音、手工音频播放、完整断网安装、Calamares 完成页、移除 ISO 后从虚拟硬盘启动、SDDM 登录和安装后 Plasma 验收。开发镜像信息：
+Calamares 改用无调试参数的生产启动路径，窗口扩宽至 1080 px，开发版本标题不再换行；欢迎页、分区、完整用户表单、摘要、安装和完成页均经过真实帧缓冲与人工审图。音频测试分别限制自动启动音的最长活跃时间和手工播放的最短活跃时间，避免旧启动音掩盖手工播放失败。
+
+最终镜像通过 51 个单元测试、4 个 os-release fixture、严格 lint，以及 UEFI 图形启动、纯文字启动、Plasma 桌面、Konsole、Firefox HTTPS 正文、Discover 应用卡片、自动/手工音频、完整断网安装、Calamares 完成页、移除 ISO 后硬盘启动、SDDM 登录和安装后 Plasma 验收。开发镜像信息：
 
 - 文件：`LC300A-x86_64.iso`
-- 大小：1,820,997,632 字节
+- 大小：1,808,547,840 字节
 - 软件包：1,617 个
-- SHA-256：`1636f389208055e3068a9a9c61740d61ed0647c3d74b0249bddb91466b9d17d4`
+- SHA-256：`3bdd34d9774b2213c07ccaae288ffc24d48bd6ff8f4f0e3bc39e825fc9b93396`
 
 这是开发版本，尚未完成真实硬件、原生 x86_64 发布性能、蓝牙/麦克风和完整中英文本地化验收。安装真实设备前请备份数据并核对目标磁盘。
 

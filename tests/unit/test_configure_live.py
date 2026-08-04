@@ -48,9 +48,38 @@ class ConfigureLiveTest(unittest.TestCase):
         ):
             self.assertIn(parameter, boot_parameters)
         self.assertEqual(arguments[arguments.index("--distribution") + 1], "trixie")
+        for option in (
+            "--mirror-bootstrap",
+            "--mirror-chroot",
+            "--mirror-binary",
+            "--mirror-chroot-volatile",
+            "--mirror-binary-volatile",
+            "--parent-mirror-bootstrap",
+            "--parent-mirror-chroot",
+            "--parent-mirror-binary",
+            "--parent-mirror-chroot-volatile",
+            "--parent-mirror-binary-volatile",
+        ):
+            self.assertEqual(
+                arguments[arguments.index(option) + 1],
+                "http://mirrors.tuna.tsinghua.edu.cn/debian",
+            )
+        for option in (
+            "--mirror-chroot-security",
+            "--mirror-binary-security",
+            "--parent-mirror-chroot-security",
+            "--parent-mirror-binary-security",
+        ):
+            self.assertEqual(
+                arguments[arguments.index(option) + 1],
+                "http://mirrors.tuna.tsinghua.edu.cn/debian-security",
+            )
 
     def test_arguments_only_configure_cross_version_rootfs_options(self):
         arguments = CONFIGURE.live_build_arguments(self.product)
+        self.assertEqual(
+            arguments[arguments.index("--apt-source-archives") + 1], "false"
+        )
         self.assertEqual(arguments[arguments.index("--security") + 1], "false")
         self.assertEqual(arguments[arguments.index("--firmware-chroot") + 1], "false")
         self.assertEqual(arguments[arguments.index("--firmware-binary") + 1], "false")
@@ -98,16 +127,48 @@ class ConfigureLiveTest(unittest.TestCase):
             security = workspace / "config/archives/lc300a-security.list.chroot"
             self.assertEqual(
                 security.read_text(encoding="utf-8"),
-                "deb http://security.debian.org/debian-security trixie-security "
+                "deb http://mirrors.tuna.tsinghua.edu.cn/debian-security trixie-security "
                 "main contrib non-free-firmware\n",
             )
             binary_security = security.with_suffix(".binary")
             self.assertEqual(binary_security.read_text(), security.read_text())
+            live_sources = (
+                workspace / "config/includes.chroot/etc/apt/sources.list"
+            ).read_text(encoding="utf-8")
+            self.assertEqual(
+                live_sources,
+                "deb http://mirrors.tuna.tsinghua.edu.cn/debian trixie "
+                "main contrib non-free-firmware\n"
+                "deb http://mirrors.tuna.tsinghua.edu.cn/debian trixie-updates "
+                "main contrib non-free-firmware\n",
+            )
+            self.assertNotIn("ftp.debian.org", live_sources)
+            self.assertNotIn("deb-src", live_sources)
+            installed_sources = (
+                workspace
+                / "config/includes.chroot/usr/share/calamares/helpers/lc300a-configure"
+            ).read_text(encoding="utf-8")
+            self.assertIn(
+                "deb https://mirrors.tuna.tsinghua.edu.cn/debian trixie main ",
+                installed_sources,
+            )
+            self.assertIn(
+                "deb https://mirrors.tuna.tsinghua.edu.cn/debian-security "
+                "trixie-security main ",
+                installed_sources,
+            )
+            self.assertNotIn("deb.debian.org", installed_sources)
             boot = workspace / "lc300a-boot"
             self.assertEqual((boot / "grub.cfg").read_text(), CONFIGURE.grub_config(self.product))
             modern_hook = workspace / "config/hooks/live/010-system-defaults.hook.chroot"
             legacy_hook = workspace / "config/hooks/010-system-defaults.hook.chroot"
             self.assertEqual(modern_hook.read_bytes(), legacy_hook.read_bytes())
+            hook_text = modern_hook.read_text(encoding="utf-8")
+            self.assertIn(
+                "Acquire::IndexTargets::deb::DEP-11::DefaultEnabled=true",
+                hook_text,
+            )
+            self.assertIn("appstreamcli refresh --force --source=os", hook_text)
             self.assertTrue(modern_hook.stat().st_mode & 0o100)
             self.assertTrue(legacy_hook.stat().st_mode & 0o100)
             overlay = workspace / "config/includes.chroot"

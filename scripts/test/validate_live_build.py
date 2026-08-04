@@ -43,11 +43,37 @@ def validate() -> None:
         (arguments, "--distribution", "trixie"),
         (arguments, "--architectures", "amd64"),
         (arguments, "--binary-images", "iso-hybrid"),
+        (arguments, "--apt-source-archives", "false"),
         (arguments, "--debian-installer", "false"),
         (arguments, "--security", "false"),
         (arguments, "--firmware-chroot", "false"),
         (arguments, "--firmware-binary", "false"),
         (arguments, "--initsystem", "systemd"),
+        (
+            arguments,
+            "--mirror-bootstrap",
+            "http://mirrors.tuna.tsinghua.edu.cn/debian",
+        ),
+        (
+            arguments,
+            "--mirror-chroot-security",
+            "http://mirrors.tuna.tsinghua.edu.cn/debian-security",
+        ),
+        (
+            arguments,
+            "--parent-mirror-bootstrap",
+            "http://mirrors.tuna.tsinghua.edu.cn/debian",
+        ),
+        (
+            arguments,
+            "--parent-mirror-binary-volatile",
+            "http://mirrors.tuna.tsinghua.edu.cn/debian",
+        ),
+        (
+            arguments,
+            "--parent-mirror-binary-security",
+            "http://mirrors.tuna.tsinghua.edu.cn/debian-security",
+        ),
     )
     for candidate, option, expected in required_arguments:
         index = candidate.index(option)
@@ -83,7 +109,7 @@ def validate() -> None:
             for path in (config / "archives").glob("lc300a-security.list.*")
         }
         expected_security = (
-            "deb http://security.debian.org/debian-security trixie-security "
+            "deb http://mirrors.tuna.tsinghua.edu.cn/debian-security trixie-security "
             "main contrib non-free-firmware\n"
         )
         if security_sources != {
@@ -92,6 +118,17 @@ def validate() -> None:
         }:
             raise ValueError("Debian 安全更新源配置错误")
         overlay = config / "includes.chroot"
+        runtime_sources = (overlay / "etc/apt/sources.list").read_text(
+            encoding="utf-8"
+        )
+        expected_runtime_sources = (
+            "deb http://mirrors.tuna.tsinghua.edu.cn/debian trixie "
+            "main contrib non-free-firmware\n"
+            "deb http://mirrors.tuna.tsinghua.edu.cn/debian trixie-updates "
+            "main contrib non-free-firmware\n"
+        )
+        if runtime_sources != expected_runtime_sources:
+            raise ValueError("Live APT 主源与 updates 源配置错误")
         os_release = (overlay / "usr/lib/os-release").read_text(encoding="utf-8")
         live_config = (overlay / "etc/live/config.conf.d/lc300a.conf").read_text(
             encoding="utf-8"
@@ -112,6 +149,15 @@ def validate() -> None:
         for name in ("lc300a-mark.png", "lc300a.plymouth", "lc300a.script"):
             if not (plymouth_theme / name).is_file():
                 raise ValueError(f"Plymouth 主题缺少文件: {name}")
+        system_hook = (config / "hooks/live/010-system-defaults.hook.chroot").read_text(
+            encoding="utf-8"
+        )
+        for value in (
+            "Acquire::IndexTargets::deb::DEP-11::DefaultEnabled=true",
+            "appstreamcli refresh --force --source=os",
+        ):
+            if value not in system_hook:
+                raise ValueError(f"Discover 构建后元数据刷新缺少: {value}")
         plymouth_script = (plymouth_theme / "lc300a.script").read_text(encoding="utf-8")
         if "Image.Solid" in plymouth_script:
             raise ValueError("Plymouth 主题使用当前 script 插件不支持的 Image.Solid")

@@ -204,6 +204,20 @@ def validate_audio() -> None:
         raise ValueError("BGM 不得自动启动")
 
 
+def validate_firefox() -> None:
+    preferences = (
+        OVERLAY / "etc/firefox-esr/lc300a.js"
+    ).read_text(encoding="utf-8")
+    for value in (
+        'pref("browser.aboutwelcome.enabled", false);',
+        'pref("startup.homepage_welcome_url", "");',
+        'pref("startup.homepage_welcome_url.additional", "");',
+        'pref("datareporting.policy.dataSubmissionEnabled", false);',
+    ):
+        if value not in preferences:
+            raise ValueError(f"Firefox 首次启动配置缺少: {value}")
+
+
 def validate_assembled_assets() -> None:
     expected = {
         "usr/share/pixmaps/lc300a-mark.svg",
@@ -319,7 +333,8 @@ def validate_readiness() -> None:
         "--minimum-content-dark-ratio 0.002",
         "--minimum-content-colors 32",
         "--maximum-change-ratio 0.05",
-        "--maximum-active-duration 2.5",
+        "--maximum-active-duration 2.25",
+        "--minimum-active-duration 2.5",
         "自动会话音效有效且未检测到自动 BGM",
         "local cpu=qemu64",
         "-vga virtio",
@@ -352,6 +367,7 @@ def validate() -> None:
     validate_plasma()
     validate_color_scheme()
     validate_audio()
+    validate_firefox()
     validate_assembled_assets()
     validate_readiness()
 
