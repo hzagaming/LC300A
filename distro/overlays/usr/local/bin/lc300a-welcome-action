@@ -1,0 +1,36 @@
+#!/bin/sh
+
+set -eu
+
+[ "$#" -eq 1 ] || {
+  printf '%s\n' "LC300A welcome action requires exactly one URI" >&2
+  exit 2
+}
+
+case $1 in
+  lc300a-action:settings)
+    exec systemsettings
+    ;;
+  lc300a-action:apps)
+    exec plasma-discover
+    ;;
+  lc300a-action:finish)
+    state_root=${XDG_CONFIG_HOME:-"$HOME/.config"}/lc300a
+    umask 077
+    mkdir -p "$state_root"
+    chmod 0700 "$state_root"
+    state_temp=$(mktemp "$state_root/.welcome-complete.XXXXXX")
+    cleanup() {
+      [ -z "${state_temp:-}" ] || [ ! -e "$state_temp" ] || unlink "$state_temp"
+    }
+    trap cleanup EXIT HUP INT TERM
+    printf '%s\n' completed=true >"$state_temp"
+    chmod 0600 "$state_temp"
+    mv "$state_temp" "$state_root/welcome-complete"
+    state_temp=
+    ;;
+  *)
+    printf '%s\n' "Unsupported LC300A welcome action: $1" >&2
+    exit 2
+    ;;
+esac

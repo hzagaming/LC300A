@@ -32,6 +32,7 @@ plasma-workspace
 polkit-kde-agent-1
 powerdevil
 python3
+qml-qt6
 sddm
 sddm-theme-breeze
 systemsettings

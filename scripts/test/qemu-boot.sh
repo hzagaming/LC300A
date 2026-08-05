@@ -476,7 +476,7 @@ test_apps() {
   send_serial_line "stty -echo"
   sleep 1
   run_guest_command \
-    "export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus" \
+    "export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true KDE_SESSION_VERSION=6" \
     LC300A_GUEST_SESSION 30 || return 1
 
   test_application() {
@@ -504,7 +504,7 @@ test_apps() {
       "LC300A_${name}_ACTIVE" "$launch_timeout" || return 1
     sleep "$settle_seconds"
     send_monitor_key shift
-    if [[ $name == discover ]]; then
+    if [[ $name == discover || $name == welcome ]]; then
       if ! wait_for_framebuffer "$screenshot" "$launch_timeout" \
         --reference "$baseline" --minimum-change-ratio 0.15 \
         --minimum-content-colors 32 \
@@ -522,6 +522,21 @@ test_apps() {
       wait_for_framebuffer "$screenshot" "$launch_timeout" \
         --reference "$baseline" --minimum-change-ratio 0.15 || return 1
     fi
+    if [[ $name == welcome ]]; then
+      local previous=$screenshot
+      local step_screenshot
+      local step
+      for step in 2 3 4; do
+        send_monitor_key spc
+        sleep 3
+        step_screenshot="$PROJECT_ROOT/build/artifacts/apps-welcome-step$step.ppm"
+        wait_for_framebuffer "$step_screenshot" "$launch_timeout" \
+          --reference "$previous" --minimum-change-ratio 0.02 \
+          --minimum-content-colors 32 \
+          --minimum-content-chroma-ratio 0.01 || return 1
+        previous=$step_screenshot
+      done
+    fi
     run_guest_command \
       "systemctl --user stop '$unit'; ! systemctl --user is-active --quiet '$unit'" \
       "LC300A_${name}_STOP" 30 || return 1
@@ -532,6 +547,15 @@ test_apps() {
 
   test_application konsole lc300a-e2e-konsole.service \
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-konsole --collect -- /usr/bin/konsole --nofork -e /bin/sh -c 'printf LC300A_TERMINAL_OK; exec sleep 300'" || return 1
+  test_application dolphin lc300a-e2e-dolphin.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-dolphin --collect -- /usr/bin/dolphin --new-window /home/lc300a-live" || return 1
+  test_application systemsettings lc300a-e2e-systemsettings.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-systemsettings --collect -- /usr/bin/systemsettings" || return 1
+  test_application welcome lc300a-e2e-welcome.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-welcome --collect -- /usr/local/bin/lc300a-welcome" || return 1
+  run_guest_command \
+    "test \"\$(xdg-mime query default x-scheme-handler/lc300a-action)\" = lc300a-welcome-action.desktop && rm -f \"\$HOME/.config/lc300a/welcome-complete\" && /usr/bin/systemd-run --user --unit=lc300a-e2e-welcome-action --collect --wait -- /usr/bin/xdg-open lc300a-action:finish && for attempt in \$(seq 1 30); do test -f \"\$HOME/.config/lc300a/welcome-complete\" && break; sleep 1; done; test \"\$(cat \"\$HOME/.config/lc300a/welcome-complete\")\" = completed=true && test \"\$(stat -c %a \"\$HOME/.config/lc300a/welcome-complete\")\" = 600" \
+    LC300A_WELCOME_ACTION 40 || return 1
   test_application firefox lc300a-e2e-firefox.service \
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-firefox --collect -- /usr/bin/firefox-esr --new-window https://example.com" || return 1
   test_application discover lc300a-e2e-discover.service \
@@ -541,13 +565,13 @@ test_apps() {
     --maximum-active-duration 2.25 || return 1
   printf '[OK] 自动会话音效有效且未检测到自动 BGM\n'
   run_guest_command \
-    "/usr/bin/pw-play --volume=0.45 /usr/share/sounds/luochuan-flow/stereo/desktop-login.wav" \
+    "/usr/bin/pw-play --volume=0.45 /usr/share/sounds/luochuan-flow/preview/ambient-preview.wav" \
     LC300A_AUDIO_PLAYBACK 60 || return 1
   stop_serial_bridge
   quit_qemu
   python3 "$PROJECT_ROOT/scripts/test/validate_audio_output.py" "$AUDIO_OUTPUT" \
     --minimum-active-duration 2.5 || return 1
-  printf '[OK] Konsole、Firefox、Discover 与音频图形交互测试通过\n'
+  printf '[OK] Konsole、Dolphin、系统设置、欢迎程序、Firefox、Discover 与音频图形交互测试通过\n'
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then

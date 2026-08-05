@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=LC300A Welcome Action
+Exec=/usr/local/bin/lc300a-welcome-action %u
+NoDisplay=true
+Terminal=false
+MimeType=x-scheme-handler/lc300a-action;
+StartupNotify=false

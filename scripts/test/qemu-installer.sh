@@ -11,6 +11,7 @@ readonly INSTALLER_DISK="$PROJECT_ROOT/build/artifacts/installer-test.qcow2"
 readonly INSTALLER_BASELINE="$PROJECT_ROOT/build/artifacts/installer-baseline.ppm"
 readonly INSTALLER_SCREENSHOT="$PROJECT_ROOT/build/artifacts/installer-welcome.ppm"
 readonly INSTALLED_LOGIN_SCREENSHOT="$PROJECT_ROOT/build/artifacts/installed-login.ppm"
+readonly INSTALLED_WELCOME_SCREENSHOT="$PROJECT_ROOT/build/artifacts/installed-welcome.ppm"
 readonly INSTALLED_DESKTOP_SCREENSHOT="$PROJECT_ROOT/build/artifacts/installed-desktop.ppm"
 readonly INSTALLER_TEST_USER=lc300a-test
 readonly INSTALLER_TEST_PASSWORD=RiverStone-300
@@ -18,12 +19,17 @@ readonly INSTALLER_TEST_PASSWORD=RiverStone-300
 validate_installation_timeouts() {
   local install_timeout=${INSTALLER_TIMEOUT_SECONDS:-3600}
   local boot_timeout=${INSTALLED_BOOT_TIMEOUT_SECONDS:-900}
+  local finish_render_seconds=${INSTALLER_FINISH_RENDER_SECONDS:-10}
   [[ $install_timeout =~ ^[0-9]+$ && $install_timeout -ge 300 && $install_timeout -le 7200 ]] || {
     printf '[ERROR] INSTALLER_TIMEOUT_SECONDS 必须在 300 到 7200 之间\n' >&2
     return 2
   }
   [[ $boot_timeout =~ ^[0-9]+$ && $boot_timeout -ge 120 && $boot_timeout -le 1800 ]] || {
     printf '[ERROR] INSTALLED_BOOT_TIMEOUT_SECONDS 必须在 120 到 1800 之间\n' >&2
+    return 2
+  }
+  [[ $finish_render_seconds =~ ^[0-9]+$ && $finish_render_seconds -ge 5 && $finish_render_seconds -le 60 ]] || {
+    printf '[ERROR] INSTALLER_FINISH_RENDER_SECONDS 必须在 5 到 60 之间\n' >&2
     return 2
   }
 }
@@ -82,6 +88,40 @@ walk_installer_pages() {
   printf '[OK] Calamares 已通过欢迎、地区、键盘并进入分区页\n'
 }
 
+wait_for_finished_page() {
+  local screenshot=$1
+  local reference=$2
+  local finish_render_seconds=${INSTALLER_FINISH_RENDER_SECONDS:-10}
+  local checksum
+  local elapsed=0
+  local previous=
+  local stable_frames=0
+
+  sleep "$finish_render_seconds"
+  while ((elapsed < 120)); do
+    if capture_framebuffer "$screenshot" \
+      --reference "$reference" --minimum-change-ratio 0.04; then
+      checksum=$(cksum <"$screenshot")
+      if [[ $checksum == "$previous" ]]; then
+        ((stable_frames += 1))
+        if ((stable_frames >= 4)); then
+          cat -- "$FRAMEBUFFER_VALIDATION_LOG"
+          return 0
+        fi
+      else
+        previous=$checksum
+        stable_frames=0
+      fi
+    fi
+    kill -0 "$QEMU_PID" >/dev/null 2>&1 || return 1
+    sleep 2
+    ((elapsed += 2))
+  done
+  printf '[ERROR] Calamares 完成页在 120 秒内未完成稳定绘制\n' >&2
+  cat -- "$FRAMEBUFFER_VALIDATION_LOG" >&2
+  return 1
+}
+
 complete_installer() {
   local install_timeout=${INSTALLER_TIMEOUT_SECONDS:-3600}
   local partition_screenshot="$PROJECT_ROOT/build/artifacts/installer-partition.ppm"
@@ -132,8 +172,7 @@ complete_installer() {
       LC300A_INSTALLER_FAILURE_LOG 30 || true
     return 1
   }
-  wait_for_framebuffer "$finished_screenshot" 120 \
-    --reference "$installing_screenshot" --minimum-change-ratio 0.04
+  wait_for_finished_page "$finished_screenshot" "$installing_screenshot"
   printf '[OK] Calamares 已完成虚拟硬盘安装并绘制完成页\n'
 }
 
@@ -163,7 +202,8 @@ boot_installed_system() {
   stop_serial_bridge
   quit_qemu
   rm -f -- "$MONITOR_SOCKET" "$SERIAL_SOCKET" "$SERIAL_COMMAND_PIPE" \
-    "$INSTALLED_LOGIN_SCREENSHOT" "$INSTALLED_DESKTOP_SCREENSHOT"
+    "$INSTALLED_LOGIN_SCREENSHOT" "$INSTALLED_WELCOME_SCREENSHOT" \
+    "$INSTALLED_DESKTOP_SCREENSHOT"
   : >"$SERIAL_LOG"
   installed_qemu_arguments
   qemu-system-x86_64 "${INSTALLED_QEMU_ARGUMENTS[@]}" \
@@ -182,19 +222,29 @@ boot_installed_system() {
   send_serial_line "stty -echo"
   sleep 1
   run_guest_command \
-    "test \"\$(. /etc/os-release; printf '%s' \"\$ID\")\" = lc300a && test -x /usr/sbin/hwclock && test \"\$(findmnt -n -o FSTYPE /)\" = ext4 && findmnt -n -o FSTYPE /boot/efi | grep -Eq '^(vfat|fat)' && ! dpkg-query -W calamares >/dev/null 2>&1 && ! dpkg-query -W live-boot >/dev/null 2>&1 && test ! -e /usr/share/applications/lc300a-installer.desktop && test \"\$(systemctl get-default)\" = graphical.target" \
+    "test \"\$(. /etc/os-release; printf '%s' \"\$ID\")\" = lc300a && test -x /usr/sbin/hwclock && test \"\$(findmnt -n -o FSTYPE /)\" = ext4 && findmnt -n -o FSTYPE /boot/efi | grep -Eq '^(vfat|fat)' && ! dpkg-query -W calamares >/dev/null 2>&1 && ! dpkg-query -W live-boot >/dev/null 2>&1 && dpkg-query -W qml-qt6 >/dev/null 2>&1 && test -x /usr/lib/qt6/bin/qml && test -x /usr/local/bin/lc300a-welcome && test -e /usr/share/applications/lc300a-welcome.desktop && test ! -e /usr/share/applications/lc300a-installer.desktop && test \"\$(systemctl get-default)\" = graphical.target" \
     LC300A_INSTALLED_SYSTEM_OK 120
 
   wait_for_framebuffer "$INSTALLED_LOGIN_SCREENSHOT" 120
   type_monitor_text "$INSTALLER_TEST_PASSWORD"
   send_monitor_key ret
   run_guest_command \
-    "found=; for attempt in \$(seq 1 300); do if pgrep -u \$(id -u) -x plasmashell >/dev/null; then found=1; break; fi; sleep 1; done; test \"\$found\" = 1" \
+    "desktop=; welcome=; for attempt in \$(seq 1 300); do pgrep -u \$(id -u) -x plasmashell >/dev/null && desktop=1; pgrep -u \$(id -u) -f '/usr/lib/qt6/bin/qml /usr/share/lc300a-welcome/Main.qml' >/dev/null && welcome=1; test \"\$desktop\" = 1 && test \"\$welcome\" = 1 && break; sleep 1; done; test \"\$desktop\" = 1 && test \"\$welcome\" = 1" \
     LC300A_INSTALLED_DESKTOP_OK 320
-  sleep 20
+  sleep 10
+  wait_for_framebuffer "$INSTALLED_WELCOME_SCREENSHOT" 120 \
+    --reference "$INSTALLED_LOGIN_SCREENSHOT" --minimum-change-ratio 0.15 \
+    --minimum-content-colors 32 --minimum-content-chroma-ratio 0.02
+  run_guest_command \
+    "/usr/local/bin/lc300a-welcome-action lc300a-action:finish && test \"\$(cat \"\$HOME/.config/lc300a/welcome-complete\")\" = completed=true && test \"\$(stat -c %a \"\$HOME/.config/lc300a/welcome-complete\")\" = 600" \
+    LC300A_INSTALLED_WELCOME_COMPLETE 30
+  send_monitor_key alt-f4
   wait_for_framebuffer "$INSTALLED_DESKTOP_SCREENSHOT" 120 \
-    --reference "$INSTALLED_LOGIN_SCREENSHOT" --minimum-change-ratio 0.15
-  printf '[OK] 已移除 ISO 并通过 SDDM 登录安装后的 Plasma 桌面\n'
+    --reference "$INSTALLED_WELCOME_SCREENSHOT" --minimum-change-ratio 0.10
+  run_guest_command \
+    "timeout 5 /usr/local/bin/lc300a-welcome --first-login && sleep 3 && ! pgrep -u \$(id -u) -f '/usr/lib/qt6/bin/qml /usr/share/lc300a-welcome/Main.qml' >/dev/null" \
+    LC300A_INSTALLED_WELCOME_ONCE 15
+  printf '[OK] 已移除 ISO，通过 SDDM 登录并验证首次欢迎程序只自动显示一次\n'
 }
 
 login_live_console() {

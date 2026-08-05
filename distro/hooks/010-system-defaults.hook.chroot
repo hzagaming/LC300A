@@ -15,6 +15,8 @@ chmod 0755 /usr/libexec/lc300a/boot-ready
 chmod 0755 /usr/libexec/lc300a/desktop-ready /usr/libexec/lc300a/session-sound \
   /usr/libexec/lc300a/start-kwin-wayland /usr/libexec/lc300a/start-plasmashell
 chmod 0755 /usr/local/bin/plasma-discover
+chmod 0755 /usr/local/bin/lc300a-welcome /usr/local/bin/lc300a-welcome-action
+update-desktop-database /usr/share/applications
 apt-get update -o Acquire::IndexTargets::deb::DEP-11::DefaultEnabled=true
 appstreamcli refresh --force --source=os
 plymouth-set-default-theme lc300a

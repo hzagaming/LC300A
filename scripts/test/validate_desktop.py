@@ -57,6 +57,7 @@ def validate_packages() -> None:
         "plasma-pa",
         "plasma-workspace",
         "python3",
+        "qml-qt6",
         "sddm",
         "sddm-theme-breeze",
         "systemsettings",
@@ -140,13 +141,14 @@ def validate_plasma() -> None:
     favorites = read_config("etc/xdg/kicker-extra-favoritesrc")["General"]
     expected = [
         "lc300a-installer.desktop",
+        "lc300a-welcome.desktop",
         "firefox-esr.desktop",
         "org.kde.discover.desktop",
         "org.kde.dolphin.desktop",
         "org.kde.konsole.desktop",
     ]
     if favorites.get("prepend", "").split(";") != expected:
-        raise ValueError("应用菜单未固定浏览器、应用商店、文件管理器和终端")
+        raise ValueError("应用菜单未固定欢迎程序、浏览器、应用商店、文件管理器和终端")
     if favorites.getboolean("ignoredefaults", fallback=True):
         raise ValueError("应用菜单不应隐藏 Plasma 默认收藏")
 
@@ -204,6 +206,97 @@ def validate_audio() -> None:
         raise ValueError("BGM 不得自动启动")
 
 
+def validate_welcome() -> None:
+    product = tomllib.loads((BRANDING / "product.toml").read_text(encoding="utf-8"))
+    template = (PROJECT_ROOT / "apps/welcome/Main.qml.in").read_text(encoding="utf-8")
+    for value in (
+        "import QtQuick",
+        "import QtQuick.Controls",
+        "import QtQuick.Layouts",
+        "import QtMultimedia",
+        'Qt.openUrlExternally("lc300a-action:" + name)',
+        'Qt.openUrlExternally("lc300a-action:finish")',
+        "/usr/share/sounds/luochuan-flow/stereo/desktop-login.wav",
+        "/usr/share/sounds/luochuan-flow/preview/ambient-preview.wav",
+        "onClosing: previewPlayer.stop()",
+    ):
+        if value not in template:
+            raise ValueError(f"欢迎程序缺少: {value}")
+    if "autoPlay" in template:
+        raise ValueError("欢迎程序声音不得自动播放")
+
+    action = (OVERLAY / "usr/local/bin/lc300a-welcome-action").read_text(encoding="utf-8")
+    for value in (
+        "lc300a-action:settings)",
+        "lc300a-action:apps)",
+        "lc300a-action:finish)",
+        "umask 077",
+        'mktemp "$state_root/.welcome-complete.XXXXXX"',
+        'chmod 0600 "$state_temp"',
+        'mv "$state_temp" "$state_root/welcome-complete"',
+    ):
+        if value not in action:
+            raise ValueError(f"欢迎程序动作 helper 缺少: {value}")
+    if action.count("lc300a-action:") != 3 or "Unsupported LC300A welcome action" not in action:
+        raise ValueError("欢迎程序动作 helper 未严格限制 URI 白名单")
+
+    launcher = (OVERLAY / "usr/local/bin/lc300a-welcome").read_text(encoding="utf-8")
+    for value in (
+        "--first-login)",
+        "/run/live/medium",
+        "welcome-complete",
+        "/usr/lib/qt6/bin/qml",
+        "/usr/share/lc300a-welcome/Main.qml",
+        "qdbus6 org.kde.plasmashell /PlasmaShell org.freedesktop.DBus.Peer.Ping",
+    ):
+        if value not in launcher:
+            raise ValueError(f"欢迎程序启动器缺少: {value}")
+
+    desktop = read_config("usr/share/applications/lc300a-welcome.desktop")["Desktop Entry"]
+    if desktop.get("exec") != "/usr/local/bin/lc300a-welcome" or desktop.getboolean(
+        "terminal", fallback=True
+    ):
+        raise ValueError("欢迎程序菜单入口错误")
+    action_desktop = read_config(
+        "usr/share/applications/lc300a-welcome-action.desktop"
+    )["Desktop Entry"]
+    if action_desktop.get("mimetype") != "x-scheme-handler/lc300a-action;" or not action_desktop.getboolean(
+        "nodisplay", fallback=False
+    ):
+        raise ValueError("欢迎程序 URI handler 注册错误")
+    autostart = read_config("etc/xdg/autostart/lc300a-welcome.desktop")["Desktop Entry"]
+    if autostart.get("exec") != "/usr/local/bin/lc300a-welcome --first-login" or autostart.get(
+        "onlyshowin"
+    ) != "KDE;":
+        raise ValueError("欢迎程序首次登录启动配置错误")
+
+    for relative in ("usr/local/bin/lc300a-welcome", "usr/local/bin/lc300a-welcome-action"):
+        if not (OVERLAY / relative).stat().st_mode & 0o100:
+            raise ValueError(f"欢迎程序脚本不可执行: {relative}")
+    hook = (PROJECT_ROOT / "distro/hooks/010-system-defaults.hook.chroot").read_text(
+        encoding="utf-8"
+    )
+    if "update-desktop-database /usr/share/applications" not in hook:
+        raise ValueError("欢迎程序 URI handler 缓存未在构建时更新")
+
+    rendered = CONFIGURE.welcome_qml(product)
+    for value in (
+        product["product"]["display_name"],
+        product["product"]["version"],
+        product["identity"]["support_url"],
+    ):
+        if value not in rendered:
+            raise ValueError(f"欢迎程序未渲染产品值: {value}")
+    for placeholder in (
+        "@PRODUCT_DISPLAY_NAME@",
+        "@PRODUCT_VERSION@",
+        "@SUPPORT_URL@",
+        "@BRAND_",
+    ):
+        if placeholder in rendered:
+            raise ValueError(f"欢迎程序仍含未解析占位符: {placeholder}")
+
+
 def validate_firefox() -> None:
     preferences = (
         OVERLAY / "etc/firefox-esr/lc300a.js"
@@ -227,6 +320,7 @@ def validate_assembled_assets() -> None:
         "usr/share/sounds/luochuan-flow/stereo/dialog-warning.wav",
         "usr/share/sounds/luochuan-flow/stereo/message-new-instant.wav",
         "usr/share/sounds/luochuan-flow/preview/ambient-preview.wav",
+        "usr/share/lc300a-welcome/Main.qml",
     }
     with tempfile.TemporaryDirectory(prefix="lc300a-desktop-") as directory:
         workspace = Path(directory)
@@ -319,9 +413,15 @@ def validate_readiness() -> None:
         "systemd-run --user",
         "systemctl --user is-active",
         "firefox-esr",
+        "dolphin --new-window",
+        "/usr/bin/systemsettings",
+        "/usr/local/bin/lc300a-welcome",
+        "xdg-mime query default x-scheme-handler/lc300a-action",
+        "xdg-open lc300a-action:finish",
         "plasma-discover",
         "https://example.com",
         "apps-firefox-page.ppm",
+        "apps-welcome-step$step.ppm",
         "urllib.request",
         "LC300A_FIREFOX_NETWORK",
         "--new-window https://example.com",
@@ -373,6 +473,7 @@ def validate() -> None:
     validate_plasma()
     validate_color_scheme()
     validate_audio()
+    validate_welcome()
     validate_firefox()
     validate_assembled_assets()
     validate_readiness()

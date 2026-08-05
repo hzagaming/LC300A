@@ -186,8 +186,16 @@ class ConfigureLiveTest(unittest.TestCase):
                 "usr/share/wallpapers/LC300AFlow/contents/images_dark/3840x2160.svg",
                 "usr/share/sounds/luochuan-flow/stereo/desktop-login.wav",
                 "usr/share/sounds/luochuan-flow/preview/ambient-preview.wav",
+                "usr/share/lc300a-welcome/Main.qml",
             ):
                 self.assertTrue((overlay / relative).is_file(), relative)
+            welcome = (overlay / "usr/share/lc300a-welcome/Main.qml").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn(self.product["product"]["display_name"], welcome)
+            self.assertIn(self.product["product"]["version"], welcome)
+            self.assertNotIn("@PRODUCT_", welcome)
+            self.assertNotIn("@BRAND_", welcome)
 
 
 if __name__ == "__main__":

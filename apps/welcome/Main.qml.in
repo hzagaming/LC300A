@@ -1,0 +1,472 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import QtMultimedia
+
+ApplicationWindow {
+    id: window
+
+    property int currentStep: 0
+    property string feedback: ""
+    property color brandPrimary: @BRAND_PRIMARY@
+    property color brandAccent: @BRAND_ACCENT@
+    property color brandBackground: @BRAND_BACKGROUND@
+    property color brandSurface: @BRAND_SURFACE@
+    property color brandText: @BRAND_TEXT@
+    property color brandMuted: @BRAND_MUTED@
+    property color brandSuccess: @BRAND_SUCCESS@
+    readonly property var stepNames: ["欢迎", "开始使用", "隐私与声音", "完成"]
+
+    width: 960
+    height: 640
+    minimumWidth: 760
+    minimumHeight: 520
+    visible: true
+    color: brandBackground
+    title: "欢迎使用 " + @PRODUCT_DISPLAY_NAME@
+
+    function openAction(name, successMessage) {
+        if (Qt.openUrlExternally("lc300a-action:" + name)) {
+            feedback = successMessage
+        } else {
+            feedback = "无法打开对应功能，请稍后重试。"
+        }
+    }
+
+    function previewSound(source, description) {
+        previewPlayer.stop()
+        previewPlayer.source = source
+        previewPlayer.play()
+        feedback = description
+    }
+
+    onClosing: previewPlayer.stop()
+
+    AudioOutput {
+        id: previewOutput
+        volume: 0.45
+    }
+
+    MediaPlayer {
+        id: previewPlayer
+        audioOutput: previewOutput
+    }
+
+    Timer {
+        id: finishTimer
+        interval: 600
+        onTriggered: Qt.quit()
+    }
+
+    background: Rectangle {
+        color: window.brandBackground
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 28
+        spacing: 20
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 14
+
+            Image {
+                source: "file:///usr/share/pixmaps/lc300a-mark.svg"
+                sourceSize.width: 52
+                sourceSize.height: 52
+                Layout.preferredWidth: 52
+                Layout.preferredHeight: 52
+                Accessible.name: "落川OS 标志"
+            }
+
+            ColumnLayout {
+                spacing: 1
+
+                Label {
+                    text: @PRODUCT_DISPLAY_NAME@
+                    color: window.brandText
+                    font.pixelSize: 22
+                    font.weight: Font.DemiBold
+                }
+
+                Label {
+                    text: "首次使用向导 · " + @PRODUCT_VERSION@
+                    color: window.brandMuted
+                    font.pixelSize: 13
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+
+            ToolButton {
+                text: "稍后"
+                Accessible.description: "关闭向导且下次登录继续显示"
+                onClicked: Qt.quit()
+            }
+        }
+
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 10
+
+            Repeater {
+                model: window.stepNames.length
+
+                delegate: RowLayout {
+                    required property int index
+                    spacing: 6
+
+                    Rectangle {
+                        width: 26
+                        height: 26
+                        radius: 13
+                        color: index <= window.currentStep ? window.brandPrimary : window.brandSurface
+                        border.color: index <= window.currentStep ? window.brandPrimary : window.brandMuted
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: parent.parent.index + 1
+                            color: parent.parent.index <= window.currentStep ? "white" : window.brandMuted
+                            font.weight: Font.DemiBold
+                        }
+                    }
+
+                    Label {
+                        text: window.stepNames[index]
+                        color: index === window.currentStep ? window.brandText : window.brandMuted
+                        font.weight: index === window.currentStep ? Font.DemiBold : Font.Normal
+                    }
+                }
+            }
+        }
+
+        StackLayout {
+            id: pages
+            currentIndex: window.currentStep
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            Item {
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width, 700)
+                    spacing: 18
+
+                    Image {
+                        source: "file:///usr/share/pixmaps/lc300a-mark.svg"
+                        sourceSize.width: 112
+                        sourceSize.height: 112
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.preferredWidth: 112
+                        Layout.preferredHeight: 112
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: "欢迎使用 " + @PRODUCT_DISPLAY_NAME@
+                        color: window.brandText
+                        font.pixelSize: 32
+                        font.weight: Font.Bold
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: "用几步了解系统入口、隐私默认值和落川流光声音体验。所有设置都可稍后重新调整。"
+                        color: window.brandMuted
+                        font.pixelSize: 16
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Frame {
+                        Layout.alignment: Qt.AlignHCenter
+                        background: Rectangle {
+                            color: window.brandSurface
+                            radius: 10
+                            border.color: window.brandAccent
+                        }
+
+                        Label {
+                            text: "当前版本  " + @PRODUCT_VERSION@
+                            color: window.brandText
+                            font.weight: Font.DemiBold
+                        }
+                    }
+                }
+            }
+
+            Item {
+                GridLayout {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width, 820)
+                    columns: parent.width >= 820 ? 2 : 1
+                    columnSpacing: 16
+                    rowSpacing: 16
+
+                    Frame {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 170
+                        background: Rectangle {
+                            color: window.brandSurface
+                            radius: 12
+                            border.color: window.brandAccent
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 10
+
+                            Label {
+                                text: "系统设置"
+                                color: window.brandText
+                                font.pixelSize: 20
+                                font.weight: Font.DemiBold
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: "管理显示器、网络、蓝牙、声音、输入设备和电源。"
+                                color: window.brandMuted
+                                wrapMode: Text.WordWrap
+                            }
+                            Item { Layout.fillHeight: true }
+                            Button {
+                                text: "打开系统设置"
+                                Accessible.description: "打开 KDE Plasma 系统设置"
+                                onClicked: window.openAction("settings", "已请求打开系统设置。")
+                            }
+                        }
+                    }
+
+                    Frame {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 170
+                        background: Rectangle {
+                            color: window.brandSurface
+                            radius: 12
+                            border.color: window.brandAccent
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 10
+
+                            Label {
+                                text: "应用与更新"
+                                color: window.brandText
+                                font.pixelSize: 20
+                                font.weight: Font.DemiBold
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: "Discover 默认使用 Debian PackageKit；配置 Flatpak remote 后会自动启用 Flatpak。"
+                                color: window.brandMuted
+                                wrapMode: Text.WordWrap
+                            }
+                            Item { Layout.fillHeight: true }
+                            Button {
+                                text: "打开应用中心"
+                                Accessible.description: "打开 Discover 应用商店"
+                                onClicked: window.openAction("apps", "已请求打开应用中心。")
+                            }
+                        }
+                    }
+
+                    Frame {
+                        Layout.columnSpan: parent.columns
+                        Layout.fillWidth: true
+                        background: Rectangle {
+                            color: window.brandSurface
+                            radius: 12
+                            border.color: window.brandAccent
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: "常用入口已固定在应用菜单：Firefox ESR、Discover、Dolphin、Konsole 和欢迎程序。"
+                            color: window.brandText
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                }
+            }
+
+            Item {
+                RowLayout {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width, 840)
+                    spacing: 18
+
+                    Frame {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        background: Rectangle {
+                            color: window.brandSurface
+                            radius: 12
+                            border.color: window.brandAccent
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 12
+
+                            Label {
+                                text: "隐私默认值"
+                                color: window.brandText
+                                font.pixelSize: 20
+                                font.weight: Font.DemiBold
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: "系统默认关闭遥测，不自动上传日志，不在仓库或镜像中保留你的运行时状态。诊断信息只有在你主动导出时才会离开设备。"
+                                color: window.brandMuted
+                                wrapMode: Text.WordWrap
+                            }
+                            Item { Layout.fillHeight: true }
+                            Button {
+                                text: "查看支持页面"
+                                onClicked: Qt.openUrlExternally(@SUPPORT_URL@)
+                            }
+                        }
+                    }
+
+                    Frame {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        background: Rectangle {
+                            color: window.brandSurface
+                            radius: 12
+                            border.color: window.brandAccent
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: 12
+
+                            Label {
+                                text: "声音体验"
+                                color: window.brandText
+                                font.pixelSize: 20
+                                font.weight: Font.DemiBold
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: "声音试听只在你点击后播放。环境音不会自动启动、循环或在后台继续。"
+                                color: window.brandMuted
+                                wrapMode: Text.WordWrap
+                            }
+                            RowLayout {
+                                Button {
+                                    text: "试听启动音"
+                                    onClicked: window.previewSound(
+                                        "file:///usr/share/sounds/luochuan-flow/stereo/desktop-login.wav",
+                                        "正在试听启动音。"
+                                    )
+                                }
+                                Button {
+                                    text: "试听环境音"
+                                    onClicked: window.previewSound(
+                                        "file:///usr/share/sounds/luochuan-flow/preview/ambient-preview.wav",
+                                        "正在试听环境音；关闭窗口会立即停止。"
+                                    )
+                                }
+                            }
+                            Button {
+                                text: previewPlayer.playbackState === MediaPlayer.PlayingState ? "停止试听" : "当前未播放"
+                                enabled: previewPlayer.playbackState === MediaPlayer.PlayingState
+                                onClicked: previewPlayer.stop()
+                            }
+                            Item { Layout.fillHeight: true }
+                        }
+                    }
+                }
+            }
+
+            Item {
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width, 700)
+                    spacing: 18
+
+                    Rectangle {
+                        Layout.alignment: Qt.AlignHCenter
+                        width: 72
+                        height: 72
+                        radius: 36
+                        color: window.brandSuccess
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: "✓"
+                            color: "white"
+                            font.pixelSize: 38
+                            font.weight: Font.Bold
+                        }
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: "系统已经准备就绪"
+                        color: window.brandText
+                        font.pixelSize: 30
+                        font.weight: Font.Bold
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: "点击完成后，向导不会在后续登录时自动弹出；你仍可随时从应用菜单重新打开。"
+                        color: window.brandMuted
+                        font.pixelSize: 16
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+                }
+            }
+        }
+
+        Label {
+            id: feedbackLabel
+            Layout.fillWidth: true
+            text: window.feedback
+            color: window.brandMuted
+            horizontalAlignment: Text.AlignHCenter
+            visible: text.length > 0
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+
+            Button {
+                text: "上一步"
+                enabled: window.currentStep > 0
+                Accessible.description: "返回向导上一步"
+                onClicked: window.currentStep--
+            }
+
+            Item { Layout.fillWidth: true }
+
+            Button {
+                id: nextButton
+                text: window.currentStep === window.stepNames.length - 1 ? "完成" : "下一步"
+                highlighted: true
+                Accessible.description: window.currentStep === window.stepNames.length - 1
+                    ? "完成首次使用向导"
+                    : "进入向导下一步"
+                onClicked: {
+                    if (window.currentStep < window.stepNames.length - 1) {
+                        window.currentStep++
+                        return
+                    }
+                    if (Qt.openUrlExternally("lc300a-action:finish")) {
+                        window.feedback = "正在保存完成状态。"
+                        finishTimer.start()
+                    } else {
+                        window.feedback = "无法保存完成状态，请稍后重试。"
+                    }
+                }
+                Component.onCompleted: forceActiveFocus()
+            }
+        }
+    }
+}

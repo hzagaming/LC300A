@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=LC300A first-login welcome
+Exec=/usr/local/bin/lc300a-welcome --first-login
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=2
+X-KDE-StartupNotify=false

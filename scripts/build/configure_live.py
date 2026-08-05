@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,7 @@ PACKAGE_LISTS = PROJECT_ROOT / "distro/package-lists"
 OVERLAYS = PROJECT_ROOT / "distro/overlays"
 HOOKS = PROJECT_ROOT / "distro/hooks"
 INSTALLER = PROJECT_ROOT / "installer"
+WELCOME_TEMPLATE = PROJECT_ROOT / "apps/welcome/Main.qml.in"
 DEFAULT_WORKSPACE = PROJECT_ROOT / "build/live-build/work"
 BUILD_DEBIAN_MIRROR = "http://mirrors.tuna.tsinghua.edu.cn/debian"
 BUILD_SECURITY_MIRROR = "http://mirrors.tuna.tsinghua.edu.cn/debian-security"
@@ -131,6 +133,30 @@ def brand_assets() -> dict[Path, str]:
     for sound_id, destination in destinations.items():
         assets[sound_theme_path.parent / sound_theme["sounds"][sound_id]["file"]] = destination
     return assets
+
+
+def welcome_qml(product: dict) -> str:
+    metadata = product["product"]
+    identity = product["identity"]
+    colors = product["colors"]["light"]
+    replacements = {
+        "@PRODUCT_DISPLAY_NAME@": metadata["display_name"],
+        "@PRODUCT_VERSION@": metadata["version"],
+        "@SUPPORT_URL@": identity["support_url"],
+        "@BRAND_PRIMARY@": colors["primary"],
+        "@BRAND_ACCENT@": colors["accent"],
+        "@BRAND_BACKGROUND@": colors["background"],
+        "@BRAND_SURFACE@": colors["surface"],
+        "@BRAND_TEXT@": colors["text"],
+        "@BRAND_MUTED@": colors["text_muted"],
+        "@BRAND_SUCCESS@": colors["success"],
+    }
+    rendered = WELCOME_TEMPLATE.read_text(encoding="utf-8")
+    for placeholder, value in replacements.items():
+        rendered = rendered.replace(placeholder, json.dumps(value, ensure_ascii=False))
+    if "@" in rendered:
+        raise ValueError("welcome QML contains an unresolved product placeholder")
+    return rendered
 
 
 def live_boot_parameters(product: dict, graphical: bool = True) -> str:
@@ -315,6 +341,9 @@ def assemble_inputs(workspace: Path, product: dict) -> None:
         target = overlay_target / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
+    welcome_target = overlay_target / "usr/share/lc300a-welcome/Main.qml"
+    welcome_target.parent.mkdir(parents=True, exist_ok=True)
+    welcome_target.write_text(welcome_qml(product), encoding="utf-8")
     for source in sorted(HOOKS.glob("*.hook.chroot")):
         for target in (hooks_root / source.name, hook_target / source.name):
             shutil.copy2(source, target)
