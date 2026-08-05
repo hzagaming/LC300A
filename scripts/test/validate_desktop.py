@@ -297,7 +297,11 @@ def validate_readiness() -> None:
         "/usr/bin/plasma-discover",
         "--listbackends",
         "--backends|--backends=*",
-        "--backends packagekit-backend,flatpak-backend",
+        "backends=packagekit-backend",
+        "flatpak remotes --system --columns=name",
+        "flatpak remotes --user --columns=name",
+        'backends="$backends,flatpak-backend"',
+        '--backends "$backends"',
     ):
         if value not in discover:
             raise ValueError(f"Discover 安全启动器缺少: {value}")
@@ -320,18 +324,16 @@ def validate_readiness() -> None:
         "apps-firefox-page.ppm",
         "urllib.request",
         "LC300A_FIREFOX_NETWORK",
-        "LC300A_FIREFOX_NAVIGATE",
-        "systemd-run --user --wait --collect --quiet",
-        "--new-tab https://example.com",
+        "--new-window https://example.com",
         "ich9-intel-hda",
         "hda-output,audiodev=audio0",
         "quit_qemu",
         'connection.sendall(b"quit\\n")',
         "validate_audio_output.py",
         "--minimum-change-ratio 0.15",
-        "--minimum-change-ratio 0.01",
         "--minimum-content-dark-ratio 0.002",
         "--minimum-content-colors 32",
+        "--minimum-content-chroma-ratio 0.02",
         "--maximum-change-ratio 0.05",
         "--maximum-active-duration 2.25",
         "--minimum-active-duration 2.5",
@@ -343,6 +345,10 @@ def validate_readiness() -> None:
             raise ValueError(f"QEMU 桌面测试缺少: {value}")
     if "enter_firefox_url" in qemu:
         raise ValueError("Firefox 联网测试仍使用不可靠的 QEMU 逐键网址输入")
+    if "--new-tab https://example.com" in qemu:
+        raise ValueError("Firefox E2E 不得重复打开相同页面标签")
+    if "/usr/local/bin/plasma-discover --backends packagekit-backend" in qemu:
+        raise ValueError("Discover E2E 必须验证发行版默认后端选择逻辑")
     serial_bridge = qemu.split("start_serial_bridge() {", 1)[1].split("\n}", 1)[0]
     if 'rm -f -- "$SERIAL_SOCKET"' in serial_bridge:
         raise ValueError("串口桥不得删除由 QEMU 持有的串口 socket")

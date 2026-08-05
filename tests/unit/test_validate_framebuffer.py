@@ -116,6 +116,17 @@ class ValidateFramebufferTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 VALIDATOR.validate_content_chroma(path, 0.15)
 
+    def test_rejects_colorful_error_icon_over_grayscale_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pixels = bytearray(bytes((224, 228, 236)) * 64 * 48)
+            for y in range(22, 26):
+                for x in range(36, 40):
+                    offset = (y * 64 + x) * 3
+                    pixels[offset : offset + 3] = bytes((208, 64, 64))
+            path = self.write_ppm(directory, 64, 48, bytes(pixels))
+            with self.assertRaises(ValueError):
+                VALIDATOR.validate_content_chroma(path, 0.02)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,8 +3,8 @@ id = "lc300a"
 name = "LC300A"
 display_name = "落川OS 300型"
 variant = "Development"
-version = "0.3.3-dev"
-version_id = "0.3.3"
+version = "0.3.4-dev"
+version_id = "0.3.4"
 channel = "development"
 
 [base]

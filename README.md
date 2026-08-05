@@ -41,7 +41,7 @@ make test-apps
 make test-installer
 ```
 
-当前 `0.3.3-dev` 开发镜像为 1,808,547,840 字节、1,617 个包，SHA-256：`3bdd34d9774b2213c07ccaae288ffc24d48bd6ff8f4f0e3bc39e825fc9b93396`。
+当前 `0.3.4-dev` 开发镜像为 1,808,547,840 字节、1,617 个包，SHA-256：`6f6ec1e635cf98ff9ea84b3348586c4b3de0308064cb9c1e59937c7f18b2a766`。
 
 ### 启动系统
 
@@ -55,7 +55,7 @@ GRUB 默认在 3 秒后进入 `Live (图形桌面)`，显示 LC300A 启动画面
 
 纯文字模式使用 Live 账户 `lc300a-live`，密码为 `live`；图形模式由 SDDM 自动登录，注销后会回到图形登录页。
 
-图形桌面的应用菜单默认收藏 Firefox ESR、Discover 应用商店、Dolphin 文件管理器和 Konsole 终端。Discover 默认只加载已验证稳定的 Debian PackageKit 与 Flatpak 后端；Flatpak 软件源仍由用户按需添加。
+图形桌面的应用菜单默认收藏 Firefox ESR、Discover 应用商店、Dolphin 文件管理器和 Konsole 终端。Discover 默认只启用 Debian PackageKit；配置系统级或用户级 Flatpak remote 后会自动追加 Flatpak 后端。
 
 进入图形桌面后，可双击桌面上的“安装落川OS 300型”启动 Calamares。完整图形安装步骤与清盘风险说明见 `docs/installation/graphical-install.md`。
 

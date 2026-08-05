@@ -1,6 +1,6 @@
 # 项目状态
 
-最后更新：2026-08-03
+最后更新：2026-08-05
 
 ## 当前阶段
 
@@ -8,7 +8,7 @@
 
 ## 当前事实
 
-- 产品为 LC300A / 落川OS 300型，开发版本 `0.3.3-dev`，基于 Debian 13（trixie）amd64。
+- 产品为 LC300A / 落川OS 300型，开发版本 `0.3.4-dev`，基于 Debian 13（trixie）amd64。
 - ISO 提供 UEFI/GRUB 图形桌面与纯文字启动模式；图形模式自动进入 Plasma Wayland Live 会话。
 - SDDM、PipeWire、NetworkManager、Firefox ESR、Discover、Dolphin、Konsole 和“落川流光”品牌体验已接入。
 - Calamares 提供图形化地区、键盘、GPT/UEFI/ext4 分区、用户创建和 GRUB 安装；清空磁盘默认不选中。
@@ -17,16 +17,16 @@
 
 ## 已验证
 
-- `make test`：51 个单元测试、4 个 os-release fixture、bootstrap、清理、产品、品牌、桌面、安装器与仓库卫生契约通过。
+- `make test`：52 个单元测试、4 个 os-release fixture、bootstrap、清理、产品、品牌、桌面、安装器与仓库卫生契约通过。
 - `make lint STRICT=1`：23 个 Shell/系统脚本、Python 配置校验、ShellCheck 与严格仓库检查通过。
-- UI/UX：Logo、双主题壁纸、Plymouth、Plasma、SDDM 深色登录页、Firefox 单标签首启、Discover 应用卡片，以及 Calamares 1080 px 生产界面的欢迎/分区/完整用户表单/摘要/安装/完成页面通过真实帧缓冲与人工审图。
+- UI/UX：Logo、双主题壁纸、Plymouth、Plasma、SDDM 深色登录页、Firefox 单标签 HTTPS 正文、Discover 应用卡片，以及 Calamares 1080 px 生产界面的欢迎/分区/完整用户表单/摘要/安装/完成页面通过真实帧缓冲与人工审图。
 - SFX/BGM：4 个 WAV 的 48 kHz/16-bit/mono、时长、峰值、首尾淡入淡出、SHA-256 与确定性重生成通过；自动启动音最长活跃时间与手工播放最短活跃时间分别验收，BGM 预览默认关闭且不自动播放或循环。
 - `make test-boot` 与 `make test-console`：UEFI 默认图形路径和纯文字路径分别检测到 `LC300A_BOOT_OK`、`LC300A_CONSOLE_OK`。
 - `make test-desktop`：SDDM 自动登录、KWin Wayland、Plasma、PipeWire、WirePlumber、NetworkManager、D-Bus 和真实非黑屏帧缓冲通过。
-- `make test-apps`：Konsole、Firefox 单标签 HTTPS 正文、Discover 真实应用卡片通过；自动阶段捕获 6.85 秒有效 WAV 且未检测到自动 BGM，手工播放后总捕获 9.61 秒，峰值 7,843、非零采样 300,788。
-- 成品 chroot 的 AppStream 状态识别 2,610 个软件组件和 5,208 个软件目录/图标文件，Discover 不再出现元数据加载错误。
-- `make test-installer`：无调试参数的完整断网安装、GPT、ext4、FAT EFI、`hwclock`、GRUB、完成页、安装后清理、移除 ISO 后启动、串口登录、SDDM 和 Plasma 连续两轮通过。
-- 当前 ISO 为 1,808,547,840 字节、1,617 个包，SHA-256 为 `3bdd34d9774b2213c07ccaae288ffc24d48bd6ff8f4f0e3bc39e825fc9b93396`。
+- `make test-apps`：Konsole、Firefox 单标签 HTTPS 正文、Discover 真实应用卡片通过；自动阶段捕获 7.01 秒有效 WAV，峰值 7,848、非零采样 144,914，且未检测到自动 BGM；手工播放后总捕获 9.72 秒、非零采样 295,308。
+- 成品 chroot 的 AppStream 状态识别 2,610 个软件组件、3 个软件目录源和 3 个图标集；Discover 默认只使用 PackageKit，配置系统级或用户级 Flatpak remote 后自动追加 Flatpak 后端。
+- `make test-installer`：无调试参数的完整断网安装、GPT、ext4、FAT EFI、`hwclock`、GRUB、完成页、安装后清理、移除 ISO 后启动、串口登录、SDDM 和 Plasma 本轮完整通过。
+- 当前 ISO 为 1,808,547,840 字节、1,617 个包，SHA-256 为 `6f6ec1e635cf98ff9ea84b3348586c4b3de0308064cb9c1e59937c7f18b2a766`。
 
 ## 已知限制
 

@@ -486,10 +486,18 @@ test_apps() {
     local baseline="$PROJECT_ROOT/build/artifacts/apps-$name-baseline.ppm"
     local screenshot="$PROJECT_ROOT/build/artifacts/apps-$name.ppm"
     local restored="$PROJECT_ROOT/build/artifacts/apps-$name-restored.ppm"
-    local firefox_page="$PROJECT_ROOT/build/artifacts/apps-firefox-page.ppm"
+
+    if [[ $name == firefox ]]; then
+      screenshot="$PROJECT_ROOT/build/artifacts/apps-firefox-page.ppm"
+    fi
 
     send_monitor_key shift
     wait_for_framebuffer "$baseline" 30 || return 1
+    if [[ $name == firefox ]]; then
+      run_guest_command \
+        "/usr/bin/python3 -c \"import urllib.request; response = urllib.request.urlopen('https://example.com', timeout=30); content = response.read(); assert response.status == 200 and b'Example Domain' in content\"" \
+        LC300A_FIREFOX_NETWORK 45 || return 1
+    fi
     run_guest_command "$command" "LC300A_${name}_START" 30 || return 1
     run_guest_command \
       "for attempt in \$(seq 1 $launch_timeout); do systemctl --user is-active --quiet '$unit' && break; sleep 1; done; systemctl --user is-active --quiet '$unit'" \
@@ -499,26 +507,20 @@ test_apps() {
     if [[ $name == discover ]]; then
       if ! wait_for_framebuffer "$screenshot" "$launch_timeout" \
         --reference "$baseline" --minimum-change-ratio 0.15 \
-        --minimum-content-colors 32; then
+        --minimum-content-colors 32 \
+        --minimum-content-chroma-ratio 0.02; then
         run_guest_command \
           "sudo journalctl -u packagekit.service -n 120 --no-pager || true; /usr/bin/appstreamcli status || true; find /var/lib/swcatalog -maxdepth 3 -type f -print || true; /usr/bin/python3 -c \"import urllib.request; assert urllib.request.urlopen('http://mirrors.tuna.tsinghua.edu.cn/debian/dists/trixie/InRelease', timeout=30).status == 200\" || true" \
           LC300A_DISCOVER_DIAGNOSTICS 60 || true
         return 1
       fi
+    elif [[ $name == firefox ]]; then
+      wait_for_framebuffer "$screenshot" "$launch_timeout" \
+        --reference "$baseline" --minimum-change-ratio 0.15 \
+        --minimum-content-dark-ratio 0.002 || return 1
     else
       wait_for_framebuffer "$screenshot" "$launch_timeout" \
         --reference "$baseline" --minimum-change-ratio 0.15 || return 1
-    fi
-    if [[ $name == firefox ]]; then
-      run_guest_command \
-        "/usr/bin/python3 -c \"import urllib.request; response = urllib.request.urlopen('https://example.com', timeout=30); content = response.read(); assert response.status == 200 and b'Example Domain' in content\"" \
-        LC300A_FIREFOX_NETWORK 45 || return 1
-      run_guest_command \
-        "/usr/bin/systemd-run --user --wait --collect --quiet -- /usr/bin/firefox-esr --new-tab https://example.com" \
-        LC300A_FIREFOX_NAVIGATE 30 || return 1
-      wait_for_framebuffer "$firefox_page" "$launch_timeout" \
-        --reference "$screenshot" --minimum-change-ratio 0.01 \
-        --minimum-content-dark-ratio 0.002 || return 1
     fi
     run_guest_command \
       "systemctl --user stop '$unit'; ! systemctl --user is-active --quiet '$unit'" \

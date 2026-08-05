@@ -2,6 +2,20 @@
 
 本项目遵循语义化版本。开发版本只有在对应阶段的真实验收通过后才记录为完成。
 
+## [0.3.4-dev] - 2026-08-05
+
+### Changed
+
+- Discover 默认只启用 PackageKit，并在检测到系统级或用户级 Flatpak remote 后自动追加 Flatpak 后端。
+- Firefox E2E 先独立验证 DNS、HTTPS、证书和正文，再直接启动单一目标页面窗口。
+- Discover E2E 改为验证整个主内容区的彩色内容比例，并增加灰白错误页回归用例。
+
+### Fixed
+
+- 修复未配置 Flatpak remote 时 Discover 间歇显示 `Unable to load applications`，以及用户级 remote 未被发现的问题。
+- 修复 Firefox E2E 启动浏览器后再次打开相同页面、产生重复标签的问题。
+- 修复 Discover 错误页的小块彩色图标可能让固定坐标帧缓冲检查误判成功的问题。
+
 ## [0.3.3-dev] - 2026-08-03
 
 ### Changed
