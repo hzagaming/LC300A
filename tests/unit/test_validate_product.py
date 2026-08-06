@@ -50,6 +50,30 @@ class ProductConfigTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             VALIDATOR.validate_config(config)
 
+    def test_requires_realistic_capacity_requirements(self):
+        requirements = self.valid["requirements"]
+        self.assertGreaterEqual(requirements["minimum_storage_gib"], 16)
+        self.assertGreaterEqual(
+            requirements["recommended_storage_gib"],
+            requirements["minimum_storage_gib"],
+        )
+        self.assertGreaterEqual(requirements["minimum_memory_gib"], 2)
+        self.assertLessEqual(
+            requirements["typical_install_gib"],
+            requirements["minimum_storage_gib"],
+        )
+
+        config = copy.deepcopy(self.valid)
+        del config["requirements"]
+        with self.assertRaises(ValueError):
+            VALIDATOR.validate_config(config)
+
+        self.assert_rejected("requirements", "minimum_storage_gib", 4)
+        self.assert_rejected("requirements", "recommended_storage_gib", 8)
+        self.assert_rejected("requirements", "minimum_memory_gib", 1)
+        self.assert_rejected("requirements", "typical_install_gib", 0)
+        self.assert_rejected("requirements", "minimum_storage_gib", True)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,6 +15,15 @@ GRUB 提供两个入口：
 
 Live 文本账户为 `lc300a-live`，密码为 `live`。图形模式会自动登录，无需输入密码。
 
+## 容量要求
+
+- 最低磁盘：16 GiB
+- 推荐磁盘：32 GiB
+- 最低内存：2 GiB
+- 典型安装：约 6 GiB
+
+当前开发镜像的展开 rootfs 实测约 4.63 GiB；安装时仍应保留日志、软件缓存、更新和用户数据空间。Calamares 会检查最低磁盘与内存要求。
+
 ## 使用图形安装器
 
 进入桌面后，双击桌面的“安装落川OS 300型”，或从应用菜单搜索同名程序。安装器将依次显示语言、地区、键盘、磁盘、用户和摘要页面。
@@ -34,7 +43,7 @@ Plasma 应用菜单和任务栏默认提供：
 - Dolphin 文件管理器
 - Konsole 终端
 
-Discover 默认启用 Debian PackageKit 与 Flatpak 后端；Flatpak 软件源需按需添加。
+Discover 默认只启用 Debian PackageKit；检测到系统级或用户级 Flatpak remote 后才会追加 Flatpak 后端。
 
 ## 自动验收
 

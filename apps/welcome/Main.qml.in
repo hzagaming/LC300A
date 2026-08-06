@@ -19,8 +19,8 @@ ApplicationWindow {
 
     width: 960
     height: 640
-    minimumWidth: 760
-    minimumHeight: 520
+    minimumWidth: 800
+    minimumHeight: 600
     visible: true
     color: brandBackground
     title: "欢迎使用 " + @PRODUCT_DISPLAY_NAME@
@@ -41,6 +41,13 @@ ApplicationWindow {
     }
 
     onClosing: previewPlayer.stop()
+    onCurrentStepChanged: {
+        if (currentStep !== 2) {
+            previewPlayer.stop()
+            previewPlayer.source = ""
+            feedback = ""
+        }
+    }
 
     AudioOutput {
         id: previewOutput
@@ -151,15 +158,15 @@ ApplicationWindow {
                 ColumnLayout {
                     anchors.centerIn: parent
                     width: Math.min(parent.width, 700)
-                    spacing: 18
+                    spacing: 14
 
                     Image {
                         source: "file:///usr/share/pixmaps/lc300a-mark.svg"
-                        sourceSize.width: 112
-                        sourceSize.height: 112
+                        sourceSize.width: 96
+                        sourceSize.height: 96
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 112
-                        Layout.preferredHeight: 112
+                        Layout.preferredWidth: 96
+                        Layout.preferredHeight: 96
                     }
 
                     Label {
@@ -194,6 +201,53 @@ ApplicationWindow {
                             font.weight: Font.DemiBold
                         }
                     }
+
+                    Frame {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 72
+                        background: Rectangle {
+                            color: window.brandSurface
+                            radius: 10
+                            border.color: window.brandAccent
+                        }
+
+                        GridLayout {
+                            anchors.fill: parent
+                            columns: 4
+                            columnSpacing: 12
+
+                            Repeater {
+                                model: [
+                                    ["最低磁盘", @MINIMUM_STORAGE_GIB@],
+                                    ["推荐磁盘", @RECOMMENDED_STORAGE_GIB@],
+                                    ["最低内存", @MINIMUM_MEMORY_GIB@],
+                                    ["典型安装", "约 " + @TYPICAL_INSTALL_GIB@]
+                                ]
+
+                                delegate: ColumnLayout {
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: modelData[0]
+                                        color: window.brandMuted
+                                        horizontalAlignment: Text.AlignHCenter
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: modelData[1]
+                                        color: window.brandText
+                                        horizontalAlignment: Text.AlignHCenter
+                                        font.weight: Font.DemiBold
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -201,7 +255,7 @@ ApplicationWindow {
                 GridLayout {
                     anchors.centerIn: parent
                     width: Math.min(parent.width, 820)
-                    columns: parent.width >= 820 ? 2 : 1
+                    columns: 2
                     columnSpacing: 16
                     rowSpacing: 16
 
@@ -375,7 +429,11 @@ ApplicationWindow {
                             Button {
                                 text: previewPlayer.playbackState === MediaPlayer.PlayingState ? "停止试听" : "当前未播放"
                                 enabled: previewPlayer.playbackState === MediaPlayer.PlayingState
-                                onClicked: previewPlayer.stop()
+                                onClicked: {
+                                    previewPlayer.stop()
+                                    previewPlayer.source = ""
+                                    window.feedback = "试听已停止。"
+                                }
                             }
                             Item { Layout.fillHeight: true }
                         }

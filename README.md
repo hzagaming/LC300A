@@ -2,7 +2,7 @@
 
 LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 Debian Stable、Linux LTS、KDE Plasma、Wayland 和 Calamares 为基础，目标是生成可通过 UEFI 启动、可试用、可安装并可更新的桌面操作系统。
 
-当前状态：**阶段 4 — 桌面体验和系统应用（进行中）**，首次登录欢迎体验第一增量已完成。Plasma Wayland、SDDM、PipeWire、NetworkManager、基础桌面应用、品牌体验、Calamares 与 Qt 6/QML 欢迎程序已接入 ISO，并通过 QEMU/OVMF 启动、真实帧缓冲、应用联网、非静音音频、完全断网安装、首次登录及安装后硬盘启动 E2E；原生 x86_64 发布验收及真实硬件兼容性仍待验证。
+当前状态：**阶段 4 — 桌面体验和系统应用（进行中）**，首次登录欢迎体验与容量透明度增量已完成。Plasma Wayland、SDDM、PipeWire、NetworkManager、基础桌面应用、品牌体验、Calamares 与 Qt 6/QML 欢迎程序已接入 ISO，并通过 QEMU/OVMF 启动、真实帧缓冲、应用联网、非静音音频、完全断网安装、首次登录及安装后硬盘启动 E2E；原生 x86_64 发布验收及真实硬件兼容性仍待验证。
 
 ## 技术基线
 
@@ -15,9 +15,18 @@ LC300A 是一个处于开发阶段的 x86_64 桌面 Linux 发行版。项目以 
 - 系统服务：systemd、NetworkManager、PipeWire、BlueZ、AppArmor
 - 应用分发：APT + Flatpak
 
-产品名称、版本和颜色统一配置在 `branding/product.toml`。
+产品名称、版本、容量要求和颜色统一配置在 `branding/product.toml`。
 
 原创“落川流光”品牌基础包含 light/dark 语义色、Logo、双主题壁纸、Plymouth 图形启动界面及可复现生成的启动/通知/警告声音。资产已接入启动流程、Plasma、SDDM 与 freedesktop 声音主题，默认关闭且禁止自动播放 BGM，详见 `docs/architecture/brand-experience.md`。
+
+## 容量与安装要求
+
+- 最低磁盘：16 GiB
+- 推荐磁盘：32 GiB
+- 最低内存：2 GiB
+- 典型安装：约 6 GiB
+
+`0.3.6-dev` 全新构建的展开 rootfs 实测为 4,965,994,496 字节（约 4.63 GiB）。典型安装口径保留了日志、包管理缓存和基础更新空间；最低磁盘不是 ISO 文件大小。
 
 ## 快速开始
 
@@ -41,7 +50,7 @@ make test-apps
 make test-installer
 ```
 
-当前 `0.3.5-dev` 开发镜像为 1,808,592,896 字节、1,618 个包，SHA-256：`7280d965872bca867e9f7cac30d7a7094c3aaf2f7c06a515f11f30ef8f3f698a`。
+当前 `0.3.6-dev` 开发镜像为 1,808,596,992 字节、1,618 个包，SHA-256：`88513683b522bae7d2e13f32fd7c8e30502cd79137c47c99b540f45756b06054`。
 
 ### 启动系统
 

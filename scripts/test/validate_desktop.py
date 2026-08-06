@@ -219,6 +219,11 @@ def validate_welcome() -> None:
         "/usr/share/sounds/luochuan-flow/stereo/desktop-login.wav",
         "/usr/share/sounds/luochuan-flow/preview/ambient-preview.wav",
         "onClosing: previewPlayer.stop()",
+        "minimumWidth: 800",
+        "minimumHeight: 600",
+        "onCurrentStepChanged",
+        'previewPlayer.source = ""',
+        "columns: 2",
     ):
         if value not in template:
             raise ValueError(f"欢迎程序缺少: {value}")
@@ -257,6 +262,8 @@ def validate_welcome() -> None:
         "terminal", fallback=True
     ):
         raise ValueError("欢迎程序菜单入口错误")
+    if desktop.get("categories") != "Settings;":
+        raise ValueError("欢迎程序菜单必须只注册一个主分类")
     action_desktop = read_config(
         "usr/share/applications/lc300a-welcome-action.desktop"
     )["Desktop Entry"]
@@ -284,6 +291,10 @@ def validate_welcome() -> None:
         product["product"]["display_name"],
         product["product"]["version"],
         product["identity"]["support_url"],
+        str(product["requirements"]["minimum_storage_gib"]),
+        str(product["requirements"]["recommended_storage_gib"]),
+        str(product["requirements"]["minimum_memory_gib"]),
+        str(product["requirements"]["typical_install_gib"]),
     ):
         if value not in rendered:
             raise ValueError(f"欢迎程序未渲染产品值: {value}")

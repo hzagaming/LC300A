@@ -35,6 +35,31 @@ class ConfigureLiveTest(unittest.TestCase):
         ):
             self.assertIn(value, motd)
 
+    def test_capacity_requirements_are_shared_by_welcome_and_installer(self):
+        requirements = self.product["requirements"]
+        welcome = CONFIGURE.welcome_qml(self.product)
+        installer = CONFIGURE.calamares_welcome_config(self.product)
+        for key in (
+            "minimum_storage_gib",
+            "recommended_storage_gib",
+            "minimum_memory_gib",
+            "typical_install_gib",
+        ):
+            self.assertIn(str(requirements[key]), welcome)
+        for key in (
+            "minimum_storage_gib",
+            "recommended_storage_gib",
+            "minimum_memory_gib",
+        ):
+            self.assertIn(f'"{requirements[key]} GiB"', welcome)
+        self.assertIn(f'"约 " + "{requirements["typical_install_gib"]} GiB"', welcome)
+        self.assertIn(
+            f'requiredStorage:    {requirements["minimum_storage_gib"]}', installer
+        )
+        self.assertIn(
+            f'requiredRam:        {requirements["minimum_memory_gib"]:.1f}', installer
+        )
+
     def test_arguments_use_product_identity(self):
         arguments = CONFIGURE.live_build_arguments(self.product)
         boot_parameters = arguments[arguments.index("--bootappend-live") + 1]
@@ -196,6 +221,13 @@ class ConfigureLiveTest(unittest.TestCase):
             self.assertIn(self.product["product"]["version"], welcome)
             self.assertNotIn("@PRODUCT_", welcome)
             self.assertNotIn("@BRAND_", welcome)
+            installer_welcome = (
+                overlay / "etc/calamares/modules/welcome.conf"
+            ).read_text(encoding="utf-8")
+            self.assertEqual(
+                installer_welcome,
+                CONFIGURE.calamares_welcome_config(self.product),
+            )
 
 
 if __name__ == "__main__":

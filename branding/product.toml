@@ -3,8 +3,8 @@ id = "lc300a"
 name = "LC300A"
 display_name = "落川OS 300型"
 variant = "Development"
-version = "0.3.5-dev"
-version_id = "0.3.5"
+version = "0.3.6-dev"
+version_id = "0.3.6"
 channel = "development"
 
 [base]
@@ -23,6 +23,12 @@ support_url = "https://github.com/charliezhong/LC300A/issues"
 [artifacts]
 iso_name = "LC300A-x86_64.iso"
 output_directory = "build/artifacts"
+
+[requirements]
+minimum_storage_gib = 16
+recommended_storage_gib = 32
+minimum_memory_gib = 2
+typical_install_gib = 6
 
 [colors.brand]
 primary = "#315C9B"

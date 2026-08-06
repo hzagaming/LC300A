@@ -138,11 +138,16 @@ def brand_assets() -> dict[Path, str]:
 def welcome_qml(product: dict) -> str:
     metadata = product["product"]
     identity = product["identity"]
+    requirements = product["requirements"]
     colors = product["colors"]["light"]
     replacements = {
         "@PRODUCT_DISPLAY_NAME@": metadata["display_name"],
         "@PRODUCT_VERSION@": metadata["version"],
         "@SUPPORT_URL@": identity["support_url"],
+        "@MINIMUM_STORAGE_GIB@": f'{requirements["minimum_storage_gib"]} GiB',
+        "@RECOMMENDED_STORAGE_GIB@": f'{requirements["recommended_storage_gib"]} GiB',
+        "@MINIMUM_MEMORY_GIB@": f'{requirements["minimum_memory_gib"]} GiB',
+        "@TYPICAL_INSTALL_GIB@": f'{requirements["typical_install_gib"]} GiB',
         "@BRAND_PRIMARY@": colors["primary"],
         "@BRAND_ACCENT@": colors["accent"],
         "@BRAND_BACKGROUND@": colors["background"],
@@ -157,6 +162,32 @@ def welcome_qml(product: dict) -> str:
     if "@" in rendered:
         raise ValueError("welcome QML contains an unresolved product placeholder")
     return rendered
+
+
+def calamares_welcome_config(product: dict) -> str:
+    requirements = product["requirements"]
+    return "\n".join(
+        (
+            "---",
+            "showSupportUrl:         true",
+            "showKnownIssuesUrl:     true",
+            "showReleaseNotesUrl:    true",
+            "",
+            "requirements:",
+            f'    requiredStorage:    {requirements["minimum_storage_gib"]}',
+            f'    requiredRam:        {requirements["minimum_memory_gib"]:.1f}',
+            "    check:",
+            "        - storage",
+            "        - ram",
+            "        - power",
+            "        - root",
+            "    required:",
+            "        - storage",
+            "        - ram",
+            "        - root",
+            "",
+        )
+    )
 
 
 def live_boot_parameters(product: dict, graphical: bool = True) -> str:
@@ -328,6 +359,9 @@ def assemble_inputs(workspace: Path, product: dict) -> None:
     shutil.copy2(INSTALLER / "calamares/settings.conf", calamares_target / "settings.conf")
     shutil.copytree(
         INSTALLER / "modules", calamares_target / "modules", dirs_exist_ok=True
+    )
+    (calamares_target / "modules/welcome.conf").write_text(
+        calamares_welcome_config(product), encoding="utf-8"
     )
     shutil.copytree(INSTALLER / "branding", branding_target, dirs_exist_ok=True)
     experience = experience_config()

@@ -26,9 +26,11 @@ def require_text(path: Path, values: tuple[str, ...]) -> str:
 
 
 def validate() -> None:
-    product = tomllib.loads((PROJECT_ROOT / "branding/product.toml").read_text(encoding="utf-8"))[
-        "product"
-    ]
+    product_config = tomllib.loads(
+        (PROJECT_ROOT / "branding/product.toml").read_text(encoding="utf-8")
+    )
+    product = product_config["product"]
+    requirements = product_config["requirements"]
     packages = (
         PROJECT_ROOT / "distro/package-lists/installer.list.chroot"
     ).read_text(encoding="utf-8").splitlines()
@@ -64,6 +66,17 @@ def validate() -> None:
         if f"- {unsafe_module}" in settings:
             raise ValueError(f"自制 ISO 不得使用 Debian 安装介质仓库模块: {unsafe_module}")
 
+    welcome = CONFIGURE.calamares_welcome_config(product_config)
+    for value in (
+        f'requiredStorage:    {requirements["minimum_storage_gib"]}',
+        f'requiredRam:        {requirements["minimum_memory_gib"]:.1f}',
+        "        - storage",
+        "        - ram",
+        "        - root",
+    ):
+        if value not in welcome:
+            raise ValueError(f"安装器欢迎页容量契约缺少: {value.strip()}")
+
     require_text(
         PROJECT_ROOT / "installer/modules/partition.conf",
         (
@@ -87,9 +100,11 @@ def validate() -> None:
         (
             "componentName: lc300a",
             "windowSize: 1080px,680px",
-            "productName: 落川OS 300型",
-            f'version: {product["version"]}',
-            f'shortVersion: {product["version_id"]}',
+            "  productName: 落川OS 300型",
+            f'  version: {product["version"]}',
+            f'  shortVersion: {product["version_id"]}',
+            f'  versionedName: 落川OS 300型 {product["version"]}',
+            f'  shortVersionedName: 落川OS {product["version_id"]}',
             "bootloaderEntryName: LC300A",
             'productLogo: "lc300a-mark.svg"',
             'slideshow: "show.qml"',
@@ -168,6 +183,7 @@ def validate() -> None:
         overlay = workspace / "config/includes.chroot"
         expected = (
             "etc/calamares/settings.conf",
+            "etc/calamares/modules/welcome.conf",
             "etc/calamares/modules/partition.conf",
             "etc/calamares/modules/packages.conf",
             "etc/calamares/branding/lc300a/branding.desc",

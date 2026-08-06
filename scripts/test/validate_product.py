@@ -16,7 +16,7 @@ def load_config(path: Path) -> dict:
 
 def require(config: dict, section: str, key: str, expected_type: type = str):
     value = config.get(section, {}).get(key)
-    if not isinstance(value, expected_type) or (expected_type is str and not value.strip()):
+    if type(value) is not expected_type or (expected_type is str and not value.strip()):
         raise ValueError(f"{section}.{key} 缺失或类型错误")
     return value
 
@@ -33,6 +33,12 @@ def validate_config(config: dict) -> dict:
     live_user = require(config, "identity", "live_user")
     iso_name = require(config, "artifacts", "iso_name")
     output_directory = require(config, "artifacts", "output_directory")
+    minimum_storage = require(config, "requirements", "minimum_storage_gib", int)
+    recommended_storage = require(
+        config, "requirements", "recommended_storage_gib", int
+    )
+    minimum_memory = require(config, "requirements", "minimum_memory_gib", int)
+    typical_install = require(config, "requirements", "typical_install_gib", int)
 
     require(config, "product", "display_name")
     require(config, "product", "variant")
@@ -63,6 +69,14 @@ def validate_config(config: dict) -> dict:
     output_path = PurePosixPath(output_directory)
     if output_path.is_absolute() or ".." in output_path.parts or output_directory != "build/artifacts":
         raise ValueError("artifacts.output_directory 必须是 build/artifacts")
+    if minimum_storage < 16:
+        raise ValueError("requirements.minimum_storage_gib 不得低于 16 GiB")
+    if recommended_storage < minimum_storage:
+        raise ValueError("requirements.recommended_storage_gib 不得低于最低磁盘要求")
+    if minimum_memory < 2:
+        raise ValueError("requirements.minimum_memory_gib 不得低于 2 GiB")
+    if typical_install <= 0 or typical_install > minimum_storage:
+        raise ValueError("requirements.typical_install_gib 必须大于 0 且不超过最低磁盘要求")
 
     for key in ("home_url", "support_url"):
         parsed = urlsplit(require(config, "identity", key))

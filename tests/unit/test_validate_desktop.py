@@ -20,6 +20,19 @@ class ValidateDesktopTest(unittest.TestCase):
     def test_desktop_contract(self):
         VALIDATOR.validate()
 
+    def test_welcome_layout_and_registration_contract(self):
+        template = (PROJECT_ROOT / "apps/welcome/Main.qml.in").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("minimumWidth: 800", template)
+        self.assertIn("minimumHeight: 600", template)
+        self.assertIn("onCurrentStepChanged", template)
+        self.assertIn("previewPlayer.stop()", template)
+        desktop = VALIDATOR.read_config(
+            "usr/share/applications/lc300a-welcome.desktop"
+        )["Desktop Entry"]
+        self.assertEqual(desktop.get("categories"), "Settings;")
+
     def test_installed_color_scheme_text_contrast(self):
         colors = VALIDATOR.read_config("usr/share/color-schemes/LuochuanFlow.colors")
         for section in ("Colors:Button", "Colors:Selection", "Colors:Tooltip", "Colors:View", "Colors:Window"):

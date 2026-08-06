@@ -7,5 +7,5 @@ Comment[zh_CN]=查看系统入口、隐私默认值与声音体验
 Exec=/usr/local/bin/lc300a-welcome
 Icon=lc300a-mark
 Terminal=false
-Categories=System;Settings;
+Categories=Settings;
 StartupNotify=true
