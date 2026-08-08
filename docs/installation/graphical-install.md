@@ -22,7 +22,7 @@ Live 文本账户为 `lc300a-live`，密码为 `live`。图形模式会自动登
 - 最低内存：2 GiB
 - 典型安装：约 6 GiB
 
-当前开发镜像的展开 rootfs 实测约 4.63 GiB；安装时仍应保留日志、软件缓存、更新和用户数据空间。Calamares 会检查最低磁盘与内存要求。
+当前开发镜像的展开 rootfs 实测约 5.17 GiB；安装时仍应保留日志、软件缓存、更新和用户数据空间。Calamares 会检查最低磁盘与内存要求。
 
 ## 使用图形安装器
 
@@ -42,6 +42,13 @@ Plasma 应用菜单和任务栏默认提供：
 - Discover 应用商店
 - Dolphin 文件管理器
 - Konsole 终端
+- Kate 文本编辑器
+- KCalc 计算器
+- Ark 归档工具
+- Gwenview 图片查看器
+- Kamoso 相机
+
+终端同时预装 curl、wget、git、jq、htop、ripgrep、rsync、tree、zip/unzip 与 lsof。Kamoso 已验证无摄像头时会稳定显示无设备状态；真实摄像头画面仍需在实机验证。
 
 Discover 默认只启用 Debian PackageKit；检测到系统级或用户级 Flatpak remote 后才会追加 Flatpak 后端。
 

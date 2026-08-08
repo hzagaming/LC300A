@@ -15,6 +15,8 @@ readonly SERIAL_COMMAND_PIPE="$PROJECT_ROOT/build/artifacts/qemu-serial.commands
 readonly DESKTOP_SCREENSHOT="$PROJECT_ROOT/build/artifacts/desktop.ppm"
 readonly AUDIO_OUTPUT="$PROJECT_ROOT/build/artifacts/apps-audio.wav"
 readonly FRAMEBUFFER_VALIDATION_LOG="$PROJECT_ROOT/build/artifacts/framebuffer-validation.log"
+readonly QEMU_MEMORY_MIB=${LC300A_QEMU_MEMORY_MIB:-2048}
+readonly QEMU_CPUS=${LC300A_QEMU_CPUS:-6}
 readonly BOOT_MARKER=LC300A_BOOT_OK
 readonly CONSOLE_MARKER=LC300A_CONSOLE_OK
 readonly DESKTOP_MARKER=LC300A_DESKTOP_OK
@@ -43,29 +45,43 @@ EOF
 qemu_arguments() {
   local code=$1
   local variables=$2
-  local acceleration=tcg
+  local acceleration='tcg,thread=multi,tb-size=256'
   local cpu=qemu64
   if [[ -r /dev/kvm && -w /dev/kvm ]]; then
     acceleration=kvm
     cpu=host
   fi
   QEMU_ARGUMENTS=(
-    -machine "q35,accel=$acceleration"
+    -machine q35
+    -accel "$acceleration"
     -cpu "$cpu"
-    -m 4096
-    -smp 4
+    -m "$QEMU_MEMORY_MIB"
+    -smp "$QEMU_CPUS"
     -drive "if=pflash,format=raw,readonly=on,file=$code"
     -drive "if=pflash,format=raw,file=$variables"
     -cdrom "$ISO_PATH"
     -boot d
     -nic "user,model=virtio-net-pci"
     -device virtio-rng-pci
-    -vga virtio
+    -vga none
+    -device "virtio-vga,xres=1280,yres=800"
     -no-reboot
   )
 }
 
+validate_qemu_resources() {
+  [[ $QEMU_MEMORY_MIB =~ ^[0-9]+$ && $QEMU_MEMORY_MIB -ge 1024 && $QEMU_MEMORY_MIB -le 16384 ]] || {
+    printf '[ERROR] LC300A_QEMU_MEMORY_MIB 必须在 1024 到 16384 之间\n' >&2
+    exit 2
+  }
+  [[ $QEMU_CPUS =~ ^[0-9]+$ && $QEMU_CPUS -ge 1 && $QEMU_CPUS -le 32 ]] || {
+    printf '[ERROR] LC300A_QEMU_CPUS 必须在 1 到 32 之间\n' >&2
+    exit 2
+  }
+}
+
 require_inputs() {
+  validate_qemu_resources
   [[ -f $ISO_PATH ]] || {
     printf '[ERROR] ISO 不存在，请先运行 make iso\n' >&2
     exit 1
@@ -416,6 +432,7 @@ test_apps() {
   local restore_timeout=${APP_RESTORE_TIMEOUT_SECONDS:-60}
   local settle_seconds=${APP_SETTLE_SECONDS:-30}
   local stability_seconds=${FRAMEBUFFER_STABILITY_SECONDS:-15}
+  local app_filter=${LC300A_APP_FILTER:-}
 
   [[ $desktop_timeout =~ ^[0-9]+$ && $desktop_timeout -ge 60 && $desktop_timeout -le 1200 ]] || {
     printf '[ERROR] DESKTOP_TIMEOUT_SECONDS 必须在 60 到 1200 之间\n' >&2
@@ -437,6 +454,13 @@ test_apps() {
     printf '[ERROR] FRAMEBUFFER_STABILITY_SECONDS 必须在 5 到 60 之间\n' >&2
     exit 2
   }
+  case $app_filter in
+    '' | konsole | dolphin | kate | kcalc | ark | gwenview | kamoso | systemsettings | welcome | firefox | discover) ;;
+    *)
+      printf '[ERROR] LC300A_APP_FILTER 不是受支持的应用: %s\n' "$app_filter" >&2
+      exit 2
+      ;;
+  esac
 
   require_inputs
   rm -f -- "$MONITOR_SOCKET" "$SERIAL_SOCKET" "$SERIAL_COMMAND_PIPE" \
@@ -478,6 +502,23 @@ test_apps() {
   run_guest_command \
     "export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true KDE_SESSION_VERSION=6" \
     LC300A_GUEST_SESSION 30 || return 1
+  run_guest_command \
+    "cli_temp=\$(mktemp -d); (curl --version >/dev/null && wget --version >/dev/null && htop --version >/dev/null && printf '%s\n' '{\"ok\":true}' > \"\$cli_temp/source.json\" && git init -q \"\$cli_temp/repo\" && test \"\$(git -C \"\$cli_temp/repo\" rev-parse --is-inside-work-tree)\" = true && jq -e .ok \"\$cli_temp/source.json\" >/dev/null && printf LC300A_TOOL_OK | rg -q TOOL_OK && rsync -a \"\$cli_temp/source.json\" \"\$cli_temp/copy.json\" && cmp \"\$cli_temp/source.json\" \"\$cli_temp/copy.json\" && tree --noreport \"\$cli_temp\" | rg -q source.json && zip -jq \"\$cli_temp/archive.zip\" \"\$cli_temp/source.json\" && test \"\$(unzip -p \"\$cli_temp/archive.zip\" source.json | jq -r .ok)\" = true && lsof -p \$\$ | rg -q '^COMMAND'); cli_status=\$?; rm -rf -- \"\$cli_temp\"; test \"\$cli_status\" -eq 0" \
+    LC300A_CLI_TOOLS 60 || return 1
+  run_guest_command \
+    "systemctl is-active --quiet systemd-zram-setup@zram0.service && grep -q '^/dev/zram0 ' /proc/swaps && test \"\$(cat /sys/block/zram0/disksize)\" -gt 0" \
+    LC300A_ZRAM_ACTIVE 30 || return 1
+  run_guest_command \
+    "grep -Fqx 'Indexing-Enabled=false' /etc/xdg/baloofilerc && ! pgrep -x baloo_file" \
+    LC300A_BALOO_DISABLED 30 || return 1
+
+  diagnose_application() {
+    local name=$1
+    local unit=$2
+    run_guest_command \
+      "systemctl --user status '$unit' --no-pager || true; sudo journalctl _SYSTEMD_USER_UNIT='$unit' -n 120 --no-pager || true; test -f \"\$HOME/.cache/lc300a-e2e-$name.log\" && cat \"\$HOME/.cache/lc300a-e2e-$name.log\" || true; pgrep -a -f '/usr/bin/$name' || true; true" \
+      "LC300A_${name}_DIAGNOSTICS" 30 || true
+  }
 
   test_application() {
     local name=$1
@@ -486,6 +527,8 @@ test_apps() {
     local baseline="$PROJECT_ROOT/build/artifacts/apps-$name-baseline.ppm"
     local screenshot="$PROJECT_ROOT/build/artifacts/apps-$name.ppm"
     local restored="$PROJECT_ROOT/build/artifacts/apps-$name-restored.ppm"
+
+    [[ -z $app_filter || $name == "$app_filter" ]] || return 0
 
     if [[ $name == firefox ]]; then
       screenshot="$PROJECT_ROOT/build/artifacts/apps-firefox-page.ppm"
@@ -509,18 +552,27 @@ test_apps() {
         --reference "$baseline" --minimum-change-ratio 0.15 \
         --minimum-content-colors 32 \
         --minimum-content-chroma-ratio 0.02; then
-        run_guest_command \
-          "sudo journalctl -u packagekit.service -n 120 --no-pager || true; /usr/bin/appstreamcli status || true; find /var/lib/swcatalog -maxdepth 3 -type f -print || true; /usr/bin/python3 -c \"import urllib.request; assert urllib.request.urlopen('http://mirrors.tuna.tsinghua.edu.cn/debian/dists/trixie/InRelease', timeout=30).status == 200\" || true" \
-          LC300A_DISCOVER_DIAGNOSTICS 60 || true
+        diagnose_application "$name" "$unit"
+        if [[ $name == discover ]]; then
+          run_guest_command \
+            "sudo journalctl -u packagekit.service -n 120 --no-pager || true; /usr/bin/appstreamcli status || true; find /var/lib/swcatalog -maxdepth 3 -type f -print || true; /usr/bin/python3 -c \"import urllib.request; assert urllib.request.urlopen('http://mirrors.tuna.tsinghua.edu.cn/debian/dists/trixie/InRelease', timeout=30).status == 200\" || true" \
+            LC300A_DISCOVER_DIAGNOSTICS 60 || true
+        fi
         return 1
       fi
     elif [[ $name == firefox ]]; then
-      wait_for_framebuffer "$screenshot" "$launch_timeout" \
+      if ! wait_for_framebuffer "$screenshot" "$launch_timeout" \
         --reference "$baseline" --minimum-change-ratio 0.15 \
-        --minimum-content-dark-ratio 0.002 || return 1
+        --minimum-content-dark-ratio 0.002; then
+        diagnose_application "$name" "$unit"
+        return 1
+      fi
     else
-      wait_for_framebuffer "$screenshot" "$launch_timeout" \
-        --reference "$baseline" --minimum-change-ratio 0.15 || return 1
+      if ! wait_for_framebuffer "$screenshot" "$launch_timeout" \
+        --reference "$baseline" --minimum-change-ratio 0.15; then
+        diagnose_application "$name" "$unit"
+        return 1
+      fi
     fi
     if [[ $name == welcome ]]; then
       local previous=$screenshot
@@ -549,17 +601,36 @@ test_apps() {
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-konsole --collect -- /usr/bin/konsole --nofork -e /bin/sh -c 'printf LC300A_TERMINAL_OK; exec sleep 300'" || return 1
   test_application dolphin lc300a-e2e-dolphin.service \
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-dolphin --collect -- /usr/bin/dolphin --new-window /home/lc300a-live" || return 1
+  test_application kate lc300a-e2e-kate.service \
+    "/usr/bin/mkdir -p \"\$HOME/.cache\" && /usr/bin/systemd-run --user --unit=lc300a-e2e-kate --collect -- /bin/sh -c 'exec /usr/bin/kate -b > \"\$HOME/.cache/lc300a-e2e-kate.log\" 2>&1'" || return 1
+  test_application kcalc lc300a-e2e-kcalc.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-kcalc --collect -- /usr/bin/kcalc" || return 1
+  test_application ark lc300a-e2e-ark.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-ark --collect -- /usr/bin/ark" || return 1
+  test_application gwenview lc300a-e2e-gwenview.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-gwenview --collect -- /usr/bin/gwenview" || return 1
+  test_application kamoso lc300a-e2e-kamoso.service \
+    "/usr/bin/systemd-run --user --unit=lc300a-e2e-kamoso --collect -- /usr/bin/kamoso" || return 1
   test_application systemsettings lc300a-e2e-systemsettings.service \
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-systemsettings --collect -- /usr/bin/systemsettings" || return 1
   test_application welcome lc300a-e2e-welcome.service \
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-welcome --collect -- /usr/local/bin/lc300a-welcome" || return 1
-  run_guest_command \
-    "test \"\$(xdg-mime query default x-scheme-handler/lc300a-action)\" = lc300a-welcome-action.desktop && rm -f \"\$HOME/.config/lc300a/welcome-complete\" && /usr/bin/systemd-run --user --unit=lc300a-e2e-welcome-action --collect --wait -- /usr/bin/xdg-open lc300a-action:finish && for attempt in \$(seq 1 30); do test -f \"\$HOME/.config/lc300a/welcome-complete\" && break; sleep 1; done; test \"\$(cat \"\$HOME/.config/lc300a/welcome-complete\")\" = completed=true && test \"\$(stat -c %a \"\$HOME/.config/lc300a/welcome-complete\")\" = 600" \
-    LC300A_WELCOME_ACTION 40 || return 1
+  if [[ -z $app_filter || $app_filter == welcome ]]; then
+    run_guest_command \
+      "test \"\$(xdg-mime query default x-scheme-handler/lc300a-action)\" = lc300a-welcome-action.desktop && rm -f \"\$HOME/.config/lc300a/welcome-complete\" && /usr/bin/systemd-run --user --unit=lc300a-e2e-welcome-action --collect --wait -- /usr/bin/xdg-open lc300a-action:finish && for attempt in \$(seq 1 30); do test -f \"\$HOME/.config/lc300a/welcome-complete\" && break; sleep 1; done; test \"\$(cat \"\$HOME/.config/lc300a/welcome-complete\")\" = completed=true && test \"\$(stat -c %a \"\$HOME/.config/lc300a/welcome-complete\")\" = 600" \
+      LC300A_WELCOME_ACTION 40 || return 1
+  fi
   test_application firefox lc300a-e2e-firefox.service \
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-firefox --collect -- /usr/bin/firefox-esr --new-window https://example.com" || return 1
   test_application discover lc300a-e2e-discover.service \
     "/usr/bin/systemd-run --user --unit=lc300a-e2e-discover --collect -- /usr/local/bin/plasma-discover" || return 1
+
+  if [[ -n $app_filter ]]; then
+    stop_serial_bridge
+    quit_qemu
+    printf '[OK] 定向应用测试通过: %s\n' "$app_filter"
+    return 0
+  fi
 
   python3 "$PROJECT_ROOT/scripts/test/validate_audio_output.py" "$AUDIO_OUTPUT" \
     --maximum-active-duration 2.25 || return 1
@@ -571,7 +642,7 @@ test_apps() {
   quit_qemu
   python3 "$PROJECT_ROOT/scripts/test/validate_audio_output.py" "$AUDIO_OUTPUT" \
     --minimum-active-duration 2.5 || return 1
-  printf '[OK] Konsole、Dolphin、系统设置、欢迎程序、Firefox、Discover 与音频图形交互测试通过\n'
+  printf '[OK] 基础工具、低内存策略、常用图形应用与音频交互测试通过\n'
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then

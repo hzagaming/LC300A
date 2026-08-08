@@ -338,7 +338,7 @@ ApplicationWindow {
 
                         Label {
                             width: parent.width
-                            text: "常用入口已固定在应用菜单：Firefox ESR、Discover、Dolphin、Konsole 和欢迎程序。"
+                            text: "常用入口已固定在应用菜单：Firefox ESR、Discover、Dolphin、Konsole、Kate、KCalc 和 Kamoso；Ark 与 Gwenview 可从应用菜单启动。"
                             color: window.brandText
                             wrapMode: Text.WordWrap
                         }

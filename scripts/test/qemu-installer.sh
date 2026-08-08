@@ -234,6 +234,7 @@ boot_installed_system() {
   sleep 10
   wait_for_framebuffer "$INSTALLED_WELCOME_SCREENSHOT" 120 \
     --reference "$INSTALLED_LOGIN_SCREENSHOT" --minimum-change-ratio 0.15 \
+    --minimum-content-dark-ratio 0.02 \
     --minimum-content-colors 32 --minimum-content-chroma-ratio 0.02
   run_guest_command \
     "/usr/local/bin/lc300a-welcome-action lc300a-action:finish && test \"\$(cat \"\$HOME/.config/lc300a/welcome-complete\")\" = completed=true && test \"\$(stat -c %a \"\$HOME/.config/lc300a/welcome-complete\")\" = 600" \

@@ -33,6 +33,68 @@ class ValidateDesktopTest(unittest.TestCase):
         )["Desktop Entry"]
         self.assertEqual(desktop.get("categories"), "Settings;")
 
+    def test_lightweight_apps_and_low_memory_profile(self):
+        packages = set(
+            (PROJECT_ROOT / "distro/package-lists/desktop.list.chroot")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
+        self.assertTrue(
+            {
+                "ark",
+                "gwenview",
+                "kamoso",
+                "kate",
+                "kcalc",
+                "htop",
+                "ripgrep",
+                "systemd-zram-generator",
+            }.issubset(packages)
+        )
+        qemu = (PROJECT_ROOT / "scripts/test/qemu-boot.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("LC300A_QEMU_MEMORY_MIB:-2048", qemu)
+        self.assertIn("LC300A_APP_FILTER", qemu)
+        self.assertIn("tcg,thread=multi,tb-size=256", qemu)
+        for application in ("ark", "gwenview", "kamoso", "kate", "kcalc"):
+            self.assertIn(f"test_application {application} ", qemu)
+        for marker in (
+            "LC300A_CLI_TOOLS",
+            "LC300A_ZRAM_ACTIVE",
+            "LC300A_BALOO_DISABLED",
+        ):
+            self.assertIn(marker, qemu)
+        for command in (
+            "curl --version",
+            "wget --version",
+            "htop --version",
+            "git init -q",
+            "/usr/bin/kate -b",
+            "rsync -a",
+            "tree --noreport",
+            "zip -jq",
+            "unzip -p",
+            "lsof -p",
+            "sudo journalctl _SYSTEMD_USER_UNIT=",
+            "lc300a-e2e-kate.log",
+        ):
+            self.assertIn(command, qemu)
+
+        welcome = (PROJECT_ROOT / "apps/welcome/Main.qml.in").read_text(
+            encoding="utf-8"
+        )
+        for application in ("Kate", "KCalc", "Kamoso"):
+            self.assertIn(application, welcome)
+
+        motd = VALIDATOR.CONFIGURE.release_files(
+            VALIDATOR.tomllib.loads(
+                (PROJECT_ROOT / "branding/product.toml").read_text(encoding="utf-8")
+            )
+        )["etc/motd"]
+        self.assertIn("Kate、KCalc、Kamoso", motd)
+        self.assertIn("curl、wget、git、jq、htop、rg", motd)
+
     def test_installed_color_scheme_text_contrast(self):
         colors = VALIDATOR.read_config("usr/share/color-schemes/LuochuanFlow.colors")
         for section in ("Colors:Button", "Colors:Selection", "Colors:Tooltip", "Colors:View", "Colors:Window"):

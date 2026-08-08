@@ -32,6 +32,8 @@ class ConfigureLiveTest(unittest.TestCase):
             "Firefox ESR",
             "Discover",
             "Calamares 图形安装器",
+            "Kate、KCalc、Kamoso",
+            "curl、wget、git、jq、htop、rg",
         ):
             self.assertIn(value, motd)
 
@@ -200,6 +202,7 @@ class ConfigureLiveTest(unittest.TestCase):
             for relative in (
                 "etc/plymouth/plymouthd.conf",
                 "etc/xdg/kscreenlockerrc",
+                "etc/xdg/baloofilerc",
                 "etc/xdg/kicker-extra-favoritesrc",
                 "etc/xdg/powerdevilrc",
                 "usr/local/bin/plasma-discover",

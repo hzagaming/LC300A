@@ -2,6 +2,27 @@
 
 本项目遵循语义化版本。开发版本只有在对应阶段的真实验收通过后才记录为完成。
 
+## [0.3.7-dev] - 2026-08-07
+
+### Added
+
+- 加入 Ark、Gwenview、Kate、KCalc 与 Kamoso，补齐归档、图片查看、文本编辑、计算器和相机入口。
+- 显式提供 curl、wget、git、jq、htop、ripgrep、rsync、tree、zip/unzip 与 lsof 终端工具。
+- 加入 zram 交换设备，并为新增 GUI 应用、CLI 工具、zram 与 Baloo 状态增加真实系统 E2E。
+
+### Changed
+
+- QEMU 默认资源从 4 GiB/4 vCPU 调整为 2 GiB/6 vCPU，TCG 启用多线程和 256 MiB 翻译块缓存，显示设备改为显式 1280×800 virtio-vga。
+- 默认关闭 Baloo 文件索引，减少低配置环境的后台 CPU、内存和磁盘活动。
+- 应用菜单收藏加入 Kate、KCalc 与 Kamoso，欢迎程序和登录欢迎语同步展示新增工具。
+
+### Fixed
+
+- 修复多线程 TCG 子参数错误混入 q35 机器属性、导致 QEMU 11 拒绝启动的问题。
+- QEMU 内存与 vCPU 环境变量增加范围校验，拒绝无效或异常资源值。
+- 修复 Kate E2E 使用非标准新窗口参数后进程提前退出的问题，并补充应用失败日志诊断。
+- 首次登录欢迎程序改为等待 KSplash 退出后再启动；安装后 E2E 现在会识别真实欢迎窗口，避免把纯桌面误判为通过。
+
 ## [0.3.6-dev] - 2026-08-06
 
 ### Added

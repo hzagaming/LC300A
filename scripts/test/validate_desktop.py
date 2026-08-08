@@ -41,12 +41,22 @@ def validate_packages() -> None:
     ).splitlines()
     installed = set(packages) | set(core_packages)
     required = {
+        "ark",
+        "curl",
         "dolphin",
         "firefox-esr",
         "flatpak",
         "fonts-noto-cjk",
+        "git",
+        "gwenview",
+        "htop",
+        "jq",
+        "kamoso",
+        "kate",
+        "kcalc",
         "konsole",
         "kwin-wayland",
+        "lsof",
         "network-manager",
         "packagekit",
         "pipewire-pulse",
@@ -58,11 +68,18 @@ def validate_packages() -> None:
         "plasma-workspace",
         "python3",
         "qml-qt6",
+        "ripgrep",
+        "rsync",
         "sddm",
         "sddm-theme-breeze",
+        "systemd-zram-generator",
         "systemsettings",
+        "tree",
+        "unzip",
         "wireplumber",
+        "wget",
         "xwayland",
+        "zip",
     }
     if not required.issubset(installed):
         raise ValueError(f"桌面软件包清单缺少组件: {sorted(required - installed)}")
@@ -146,11 +163,18 @@ def validate_plasma() -> None:
         "org.kde.discover.desktop",
         "org.kde.dolphin.desktop",
         "org.kde.konsole.desktop",
+        "org.kde.kate.desktop",
+        "org.kde.kcalc.desktop",
+        "org.kde.kamoso.desktop",
     ]
     if favorites.get("prepend", "").split(";") != expected:
-        raise ValueError("应用菜单未固定欢迎程序、浏览器、应用商店、文件管理器和终端")
+        raise ValueError("应用菜单未固定核心应用和轻量工具")
     if favorites.getboolean("ignoredefaults", fallback=True):
         raise ValueError("应用菜单不应隐藏 Plasma 默认收藏")
+
+    baloo = read_config("etc/xdg/baloofilerc")["Basic Settings"]
+    if baloo.getboolean("Indexing-Enabled", fallback=True):
+        raise ValueError("低资源默认配置仍启用 Baloo 文件索引")
 
     power = read_config("etc/xdg/powerdevilrc")
     for profile in ("AC", "Battery", "LowBattery"):
@@ -253,6 +277,8 @@ def validate_welcome() -> None:
         "/usr/lib/qt6/bin/qml",
         "/usr/share/lc300a-welcome/Main.qml",
         "qdbus6 org.kde.plasmashell /PlasmaShell org.freedesktop.DBus.Peer.Ping",
+        '"$attempt" -lt 120',
+        "pgrep -x ksplashqml",
     ):
         if value not in launcher:
             raise ValueError(f"欢迎程序启动器缺少: {value}")
@@ -426,6 +452,11 @@ def validate_readiness() -> None:
         "firefox-esr",
         "dolphin --new-window",
         "/usr/bin/systemsettings",
+        "/usr/bin/ark",
+        "/usr/bin/gwenview",
+        "/usr/bin/kamoso",
+        "/usr/bin/kate -b",
+        "/usr/bin/kcalc",
         "/usr/local/bin/lc300a-welcome",
         "xdg-mime query default x-scheme-handler/lc300a-action",
         "xdg-open lc300a-action:finish",
@@ -435,6 +466,9 @@ def validate_readiness() -> None:
         "apps-welcome-step$step.ppm",
         "urllib.request",
         "LC300A_FIREFOX_NETWORK",
+        "LC300A_CLI_TOOLS",
+        "LC300A_ZRAM_ACTIVE",
+        "LC300A_BALOO_DISABLED",
         "--new-window https://example.com",
         "ich9-intel-hda",
         "hda-output,audiodev=audio0",
@@ -450,10 +484,15 @@ def validate_readiness() -> None:
         "--minimum-active-duration 2.5",
         "自动会话音效有效且未检测到自动 BGM",
         "local cpu=qemu64",
-        "-vga virtio",
+        "LC300A_QEMU_MEMORY_MIB:-2048",
+        "LC300A_QEMU_CPUS:-6",
+        "tcg,thread=multi,tb-size=256",
+        "virtio-vga,xres=1280,yres=800",
     ):
         if value not in qemu:
             raise ValueError(f"QEMU 桌面测试缺少: {value}")
+    if "-m 4096" in qemu or "-vga virtio" in qemu:
+        raise ValueError("QEMU 仍使用旧的高内存或隐式显示配置")
     if "enter_firefox_url" in qemu:
         raise ValueError("Firefox 联网测试仍使用不可靠的 QEMU 逐键网址输入")
     if "--new-tab https://example.com" in qemu:
@@ -473,6 +512,8 @@ def validate_readiness() -> None:
         "Firefox ESR",
         "Discover",
         "Calamares 图形安装器",
+        "Kate、KCalc、Kamoso",
+        "curl、wget、git、jq、htop、rg",
     ):
         if value not in motd:
             raise ValueError(f"登录欢迎信息缺少: {value}")

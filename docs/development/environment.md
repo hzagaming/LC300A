@@ -28,7 +28,16 @@ make test-apps
 
 `make bootstrap` 会在安装依赖前请求确认。CI 中如需非交互安装，必须显式设置 `LC300A_ASSUME_YES=1`。ISO、校验值、构建清单、包清单和串口日志写入 `build/artifacts/`。
 
-`make test-apps` 使用 QEMU 双向串口驱动 Plasma 用户会话，并生成应用帧缓冲截图与音频捕获；测试期间需要访问 `https://example.com`。
+`make test-apps` 使用 QEMU 双向串口驱动 Plasma 用户会话，真实执行 CLI 工具、检查 zram/Baloo，并生成各图形应用的帧缓冲截图与音频捕获；测试期间需要访问 `https://example.com`。
+
+自动验收默认使用 2 GiB 内存、6 个 vCPU 与 1280×800 virtio-vga；有 KVM 时自动使用原生加速，否则启用多线程 TCG。资源受限或需要对比时可显式覆盖：
+
+```bash
+LC300A_QEMU_MEMORY_MIB=1536 LC300A_QEMU_CPUS=4 make test-desktop
+LC300A_APP_FILTER=kamoso make test-apps
+```
+
+测试参数允许范围为 1024–16384 MiB、1–32 vCPU；低于产品最低 2 GiB 的内存值仅用于压力诊断，不代表受支持配置。定向应用测试会在失败后输出对应用户服务日志。
 
 ## macOS Apple Silicon
 

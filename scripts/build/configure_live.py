@@ -96,7 +96,9 @@ def release_files(product: dict) -> dict[str, str]:
         (
             f'{metadata["display_name"]} {metadata["version"]} 开发 Live 环境',
             "",
-            "图形体验：Plasma Wayland、Firefox ESR、Discover 应用商店与 Calamares 图形安装器。",
+            "图形体验：Plasma Wayland、Firefox ESR、Discover 与 Calamares 图形安装器。",
+            "常用工具：Dolphin、Konsole、Kate、KCalc、Kamoso、Ark 与 Gwenview。",
+            "终端工具：curl、wget、git、jq、htop、rg、rsync、tree、zip/unzip 与 lsof。",
             "可从启动菜单选择图形桌面或纯文字模式；本系统仅用于开发测试。",
             "",
         )

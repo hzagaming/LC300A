@@ -229,6 +229,7 @@ def validate() -> None:
             "dpkg-query -W qml-qt6",
             "INSTALLED_WELCOME_SCREENSHOT",
             "installed-welcome.ppm",
+            "--minimum-content-dark-ratio 0.02",
             "/usr/local/bin/lc300a-welcome-action lc300a-action:finish",
             "LC300A_INSTALLED_WELCOME_COMPLETE",
             "LC300A_INSTALLED_WELCOME_ONCE",
